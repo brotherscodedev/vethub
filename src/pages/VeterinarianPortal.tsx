@@ -10,9 +10,14 @@ import {
   Calendar,
   ClipboardList,
   Key,
-  Search
+  Search,
+  Plus,
+  Edit
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { VetAnimalEditModal } from '../components/VetAnimalEditModal';
+import { VetMedicalRecordModal } from '../components/VetMedicalRecordModal';
+import { VetVaccinationModal } from '../components/VetVaccinationModal';
 
 interface Veterinarian {
   id: string;
@@ -82,6 +87,9 @@ export default function VeterinarianPortal() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [editingAnimal, setEditingAnimal] = useState<any>(null);
+  const [showMedicalRecordModal, setShowMedicalRecordModal] = useState(false);
+  const [showVaccinationModal, setShowVaccinationModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -318,7 +326,13 @@ export default function VeterinarianPortal() {
                       <h3 className="font-semibold text-gray-900 text-lg">{animal.name}</h3>
                       <p className="text-sm text-gray-500">{animal.species} - {animal.breed}</p>
                     </div>
-                    <PawPrint className="h-8 w-8 text-blue-600" />
+                    <button
+                      onClick={() => setEditingAnimal(animal as any)}
+                      className="text-blue-600 hover:text-blue-700"
+                      title="Editar animal"
+                    >
+                      <Edit className="h-5 w-5" />
+                    </button>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center text-gray-600">
@@ -338,9 +352,19 @@ export default function VeterinarianPortal() {
         )}
 
         {activeTab === 'records' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+          <div>
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => setShowMedicalRecordModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Plus className="h-5 w-5" />
+                Novo Prontuário
+              </button>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
@@ -366,6 +390,7 @@ export default function VeterinarianPortal() {
                   ))}
                 </tbody>
               </table>
+            </div>
             </div>
           </div>
         )}
@@ -406,9 +431,19 @@ export default function VeterinarianPortal() {
         )}
 
         {activeTab === 'vaccinations' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+          <div>
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => setShowVaccinationModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Plus className="h-5 w-5" />
+                Nova Vacinação
+              </button>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Animal</th>
@@ -436,6 +471,7 @@ export default function VeterinarianPortal() {
                   ))}
                 </tbody>
               </table>
+            </div>
             </div>
           </div>
         )}
@@ -515,6 +551,28 @@ export default function VeterinarianPortal() {
           </div>
         )}
       </div>
+
+      {editingAnimal && (
+        <VetAnimalEditModal
+          animal={editingAnimal}
+          onClose={() => setEditingAnimal(null)}
+          onSuccess={loadVeterinarianData}
+        />
+      )}
+
+      {showMedicalRecordModal && (
+        <VetMedicalRecordModal
+          onClose={() => setShowMedicalRecordModal(false)}
+          onSuccess={loadVeterinarianData}
+        />
+      )}
+
+      {showVaccinationModal && (
+        <VetVaccinationModal
+          onClose={() => setShowVaccinationModal(false)}
+          onSuccess={loadVeterinarianData}
+        />
+      )}
     </div>
   );
 }
