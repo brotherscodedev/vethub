@@ -123,13 +123,13 @@ export default function VeterinarianLogin() {
 
             <div className="mt-6 text-center space-y-2">
               <Link
-                to="/tutor-login"
-                className="block text-sm text-blue-600 hover:text-blue-700"
+                to="/tutor/login"
+                className="block text-sm text-pink-600 hover:text-pink-700"
               >
                 Sou Tutor
               </Link>
               <Link
-                to="/login"
+                to="/auth/login"
                 className="block text-sm text-gray-600 hover:text-gray-700"
               >
                 Acessar como Staff da Clínica

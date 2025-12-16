@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { PublicLayout } from '../components/layouts/PublicLayout';
-import { CheckCircle, Users, Calendar, FileText, Pill, BarChart3, ArrowRight } from 'lucide-react';
+import { CheckCircle, Users, Calendar, FileText, Pill, BarChart3, ArrowRight, Stethoscope, Heart } from 'lucide-react';
 
 export function Home() {
   const navigate = useNavigate();
@@ -72,6 +72,38 @@ export function Home() {
                 <p className="text-gray-600">{feature.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-8">Acesso Rápido</h2>
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <button
+              onClick={() => navigate('/auth/login')}
+              className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-center"
+            >
+              <Users className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+              <h3 className="font-semibold text-gray-900 mb-2">Clínica</h3>
+              <p className="text-sm text-gray-600">Acesso administrativo</p>
+            </button>
+            <button
+              onClick={() => navigate('/veterinarian-login')}
+              className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-center"
+            >
+              <Stethoscope className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+              <h3 className="font-semibold text-gray-900 mb-2">Veterinário</h3>
+              <p className="text-sm text-gray-600">Portal profissional</p>
+            </button>
+            <button
+              onClick={() => navigate('/tutor/login')}
+              className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-center"
+            >
+              <Heart className="w-12 h-12 text-pink-600 mx-auto mb-3" />
+              <h3 className="font-semibold text-gray-900 mb-2">Tutor</h3>
+              <p className="text-sm text-gray-600">Área do cliente</p>
+            </button>
           </div>
         </div>
       </section>

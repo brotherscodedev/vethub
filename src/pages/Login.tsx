@@ -94,6 +94,24 @@ export function Login() {
                 Criar agora
               </button>
             </p>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-center text-sm text-gray-600 mb-3">Acesso para profissionais e tutores</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => navigate('/veterinarian-login')}
+                  className="w-full py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition text-sm font-medium"
+                >
+                  Sou Veterinário
+                </button>
+                <button
+                  onClick={() => navigate('/tutor/login')}
+                  className="w-full py-2 text-pink-600 border border-pink-600 rounded-lg hover:bg-pink-50 transition text-sm font-medium"
+                >
+                  Sou Tutor
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
