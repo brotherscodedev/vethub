@@ -105,6 +105,12 @@ export function Login() {
                   Sou Veterinário
                 </button>
                 <button
+                  onClick={() => navigate('/receptionist-login')}
+                  className="w-full py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 transition text-sm font-medium"
+                >
+                  Sou Recepcionista
+                </button>
+                <button
                   onClick={() => navigate('/tutor/login')}
                   className="w-full py-2 text-pink-600 border border-pink-600 rounded-lg hover:bg-pink-50 transition text-sm font-medium"
                 >
