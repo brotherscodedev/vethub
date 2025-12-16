@@ -14,6 +14,9 @@ import { PDV } from './pages/PDV';
 import { Settings } from './pages/Settings';
 import { TutorPortal } from './pages/TutorPortal';
 import { TutorLogin } from './pages/TutorLogin';
+import Veterinarians from './pages/Veterinarians';
+import VeterinarianLogin from './pages/VeterinarianLogin';
+import VeterinarianPortal from './pages/VeterinarianPortal';
 
 function App() {
   return (
@@ -25,6 +28,8 @@ function App() {
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/tutor" element={<TutorPortal />} />
           <Route path="/tutor/login" element={<TutorLogin />} />
+          <Route path="/veterinarian-login" element={<VeterinarianLogin />} />
+          <Route path="/veterinarian-portal" element={<VeterinarianPortal />} />
 
           <Route
             path="/clinic/dashboard"
@@ -87,6 +92,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clinic/veterinarians"
+            element={
+              <ProtectedRoute>
+                <Veterinarians />
               </ProtectedRoute>
             }
           />

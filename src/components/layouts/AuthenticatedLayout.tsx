@@ -14,6 +14,7 @@ import {
   Stethoscope,
   ShoppingCart,
   BarChart3,
+  UserCog,
 } from 'lucide-react';
 
 interface AuthenticatedLayoutProps {
@@ -30,6 +31,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     { icon: BarChart3, label: 'Dashboard', path: '/clinic/dashboard' },
     { icon: Users, label: 'Recepção', path: '/clinic/reception' },
     { icon: Calendar, label: 'Agenda', path: '/clinic/appointments' },
+    { icon: UserCog, label: 'Veterinários', path: '/clinic/veterinarians' },
     { icon: Stethoscope, label: 'Prontuários', path: '/clinic/medical-records' },
     { icon: Pill, label: 'Prescrições', path: '/clinic/prescriptions' },
     { icon: FileText, label: 'Carteira de Vacinas', path: '/clinic/vaccinations' },
