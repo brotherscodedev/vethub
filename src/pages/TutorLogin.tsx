@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { PublicLayout } from '../components/layouts/PublicLayout';
 import { Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -35,76 +35,70 @@ export function TutorLogin() {
 
   return (
     <PublicLayout>
-      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="bg-white rounded-lg shadow p-8">
             <div className="flex justify-center mb-6">
-              <div className="bg-gradient-to-br from-pink-500 to-rose-500 p-4 rounded-2xl">
-                <Heart className="w-10 h-10 text-white" />
+              <div className="flex items-center gap-2">
+                <Heart className="w-8 h-8 text-pink-600" />
+                <span className="text-2xl font-bold text-gray-900">Portal do Tutor</span>
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold text-center mb-2 text-gray-900">
-              Portal do Tutor
-            </h1>
-            <p className="text-center text-gray-600 mb-8">
-              Acesse as informações dos seus pets
-            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
 
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   placeholder="seu@email.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Senha
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
-                  placeholder="Digite seu CPF"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="••••••••"
                 />
-                <p className="text-xs text-gray-500 mt-2">
-                  Sua senha inicial é o seu CPF (sem pontos ou traços)
-                </p>
+                <p className="mt-1 text-xs text-gray-500">Senha inicial: seu CPF</p>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 transition transform hover:scale-105 active:scale-95"
+                className="w-full bg-pink-600 text-white py-2 rounded-lg font-semibold hover:bg-pink-700 disabled:opacity-50 transition"
               >
                 {loading ? 'Entrando...' : 'Entrar'}
               </button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-              <p className="text-sm text-gray-600">
-                Não tem acesso ainda?
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 text-center mb-3">
+                Não tem acesso? Peça para sua clínica criar
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Peça para sua clínica veterinária criar seu acesso
-              </p>
+              <div className="text-center text-sm">
+                <Link to="/veterinarian-login" className="text-blue-600 hover:underline">
+                  Sou Veterinário
+                </Link>
+                <span className="mx-2 text-gray-400">|</span>
+                <Link to="/auth/login" className="text-gray-600 hover:underline">
+                  Staff da Clínica
+                </Link>
+              </div>
             </div>
           </div>
         </div>

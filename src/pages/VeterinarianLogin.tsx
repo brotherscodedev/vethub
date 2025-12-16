@@ -53,86 +53,64 @@ export default function VeterinarianLogin() {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-teal-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-                <Stethoscope className="h-8 w-8 text-white" />
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-lg shadow p-8">
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center gap-2">
+                <Stethoscope className="w-8 h-8 text-blue-600" />
+                <span className="text-2xl font-bold text-gray-900">Portal Veterinário</span>
               </div>
-              <h2 className="text-3xl font-bold text-gray-900">Portal do Veterinário</h2>
-              <p className="text-gray-600 mt-2">Acesse sua área profissional</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={handleLogin} className="space-y-4">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
                   {error}
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="seu@email.com"
-                  />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="seu@email.com"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Senha
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Seu CPF (senha inicial)"
-                  />
-                </div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Senha inicial: seu CPF (pode ser alterada após o login)
-                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="••••••••"
+                />
+                <p className="mt-1 text-xs text-gray-500">Senha inicial: seu CPF</p>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
               >
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </button>
             </form>
 
-            <div className="mt-6 text-center space-y-2">
-              <Link
-                to="/tutor/login"
-                className="block text-sm text-pink-600 hover:text-pink-700"
-              >
+            <div className="mt-4 pt-4 border-t border-gray-200 text-center text-sm">
+              <Link to="/tutor/login" className="text-pink-600 hover:underline">
                 Sou Tutor
               </Link>
-              <Link
-                to="/auth/login"
-                className="block text-sm text-gray-600 hover:text-gray-700"
-              >
-                Acessar como Staff da Clínica
+              <span className="mx-2 text-gray-400">|</span>
+              <Link to="/auth/login" className="text-gray-600 hover:underline">
+                Staff da Clínica
               </Link>
             </div>
           </div>
