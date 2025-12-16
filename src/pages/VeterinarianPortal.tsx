@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase';
 import { VetAnimalEditModal } from '../components/VetAnimalEditModal';
 import { VetMedicalRecordModal } from '../components/VetMedicalRecordModal';
 import { VetVaccinationModal } from '../components/VetVaccinationModal';
+import { VetPrescriptionModal } from '../components/VetPrescriptionModal';
 
 interface Veterinarian {
   id: string;
@@ -53,7 +54,7 @@ interface MedicalRecord {
 
 interface Prescription {
   id: string;
-  date: string;
+  prescribed_at: string;
   medication: string;
   dosage: string;
   frequency: string;
@@ -90,6 +91,7 @@ export default function VeterinarianPortal() {
   const [editingAnimal, setEditingAnimal] = useState<any>(null);
   const [showMedicalRecordModal, setShowMedicalRecordModal] = useState(false);
   const [showVaccinationModal, setShowVaccinationModal] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -149,14 +151,14 @@ export default function VeterinarianPortal() {
         .from('prescriptions')
         .select(`
           id,
-          date,
+          prescribed_at,
           medication,
           dosage,
           frequency,
           duration,
           animal:animals(name, species)
         `)
-        .order('date', { ascending: false });
+        .order('prescribed_at', { ascending: false });
 
       setPrescriptions(prescriptionsData || []);
 
@@ -396,9 +398,19 @@ export default function VeterinarianPortal() {
         )}
 
         {activeTab === 'prescriptions' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+          <div>
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => setShowPrescriptionModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Plus className="h-5 w-5" />
+                Nova Prescrição
+              </button>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
@@ -413,7 +425,7 @@ export default function VeterinarianPortal() {
                   {prescriptions.map((prescription) => (
                     <tr key={prescription.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(prescription.date).toLocaleDateString('pt-BR')}
+                        {new Date(prescription.prescribed_at).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {prescription.animal.name}
@@ -426,6 +438,7 @@ export default function VeterinarianPortal() {
                   ))}
                 </tbody>
               </table>
+            </div>
             </div>
           </div>
         )}
@@ -570,6 +583,13 @@ export default function VeterinarianPortal() {
       {showVaccinationModal && (
         <VetVaccinationModal
           onClose={() => setShowVaccinationModal(false)}
+          onSuccess={loadVeterinarianData}
+        />
+      )}
+
+      {showPrescriptionModal && (
+        <VetPrescriptionModal
+          onClose={() => setShowPrescriptionModal(false)}
           onSuccess={loadVeterinarianData}
         />
       )}
