@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PublicLayout } from '../components/layouts/PublicLayout';
@@ -11,14 +11,22 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    console.log('Login - isAuthenticating changed:', isAuthenticating);
+  }, [isAuthenticating]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    console.log('Login form submitted', { email, isAuthenticating });
+
     try {
       await signIn(email, password);
+      console.log('Login successful, navigating to dashboard');
       navigate('/clinic/dashboard');
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message || 'Erro ao fazer login');
     }
   };

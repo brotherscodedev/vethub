@@ -138,7 +138,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, clinicData: any, profileData: any) => {
     setIsAuthenticating(true);
     try {
+      console.log('Starting signup process...', { email, clinicData, profileData });
+
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup`;
+      console.log('API URL:', apiUrl);
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -148,11 +152,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password, clinicData, profileData }),
       });
 
+      console.log('Signup response status:', response.status);
+
       const result = await response.json();
+      console.log('Signup result:', result);
 
       if (!result.success) {
-        throw new Error(result.error || 'Signup failed');
+        throw new Error(result.error || 'Erro ao criar conta');
       }
+
+      console.log('Signup successful, signing in...');
 
       // Sign in the user after successful signup
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -160,7 +169,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      if (signInError) throw signInError;
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+        throw signInError;
+      }
+
+      console.log('Sign in successful');
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
     } finally {
       setIsAuthenticating(false);
     }
@@ -169,8 +186,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsAuthenticating(true);
     try {
+      console.log('Starting sign in...', { email });
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (error) {
+        console.error('Sign in error:', error);
+        throw error;
+      }
+      console.log('Sign in successful');
+    } catch (error) {
+      console.error('Sign in failed:', error);
+      throw error;
     } finally {
       setIsAuthenticating(false);
     }

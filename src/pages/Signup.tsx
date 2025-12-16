@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PublicLayout } from '../components/layouts/PublicLayout';
@@ -9,6 +9,10 @@ export function Signup() {
   const { signUp, isAuthenticating } = useAuth();
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    console.log('Signup - isAuthenticating changed:', isAuthenticating);
+  }, [isAuthenticating]);
 
   const [clinicData, setClinicData] = useState({
     name: '',
@@ -28,6 +32,8 @@ export function Signup() {
   const handleSignUp = async () => {
     setError('');
 
+    console.log('Signup form submitted', { clinicData, profileData, isAuthenticating });
+
     if (!clinicData.name || !clinicData.cnpj) {
       setError('Dados da clínica incompletos');
       return;
@@ -44,12 +50,15 @@ export function Signup() {
     }
 
     try {
+      console.log('Calling signUp...');
       await signUp(profileData.email, profileData.password, clinicData, {
         full_name: profileData.full_name,
         cpf: profileData.cpf,
       });
+      console.log('Signup successful, navigating to dashboard');
       navigate('/clinic/dashboard');
     } catch (err: any) {
+      console.error('Signup error:', err);
       setError(err.message || 'Erro ao criar conta');
     }
   };
