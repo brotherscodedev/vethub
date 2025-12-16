@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Users, Calendar, FileText, DollarSign, Check, X, Clock } from 'lucide-react';
+import { Users, Calendar, FileText, DollarSign, Check, X, Clock, Stethoscope, Syringe, Pill } from 'lucide-react';
 import { AppointmentRequest } from '../types';
 
 export function Dashboard() {
@@ -12,6 +12,10 @@ export function Dashboard() {
     todayAppointments: 0,
     pendingRequests: 0,
     thisMonthRevenue: 0,
+    totalVeterinarians: 0,
+    totalMedicalRecords: 0,
+    totalPrescriptions: 0,
+    totalVaccinations: 0,
   });
   const [requests, setRequests] = useState<AppointmentRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,11 +46,35 @@ export function Dashboard() {
       .eq('clinic_id', currentClinicId)
       .eq('status', 'pending');
 
+    const { count: veterinariansCount } = await supabase
+      .from('veterinarians')
+      .select('*', { count: 'exact', head: true })
+      .eq('clinic_id', currentClinicId);
+
+    const { count: medicalRecordsCount } = await supabase
+      .from('medical_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('clinic_id', currentClinicId);
+
+    const { count: prescriptionsCount } = await supabase
+      .from('prescriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('clinic_id', currentClinicId);
+
+    const { count: vaccinationsCount } = await supabase
+      .from('vaccinations')
+      .select('*', { count: 'exact', head: true })
+      .eq('clinic_id', currentClinicId);
+
     setStats({
       totalAnimals: animalsCount || 0,
       todayAppointments: todayCount || 0,
       pendingRequests: pendingCount || 0,
       thisMonthRevenue: 0,
+      totalVeterinarians: veterinariansCount || 0,
+      totalMedicalRecords: medicalRecordsCount || 0,
+      totalPrescriptions: prescriptionsCount || 0,
+      totalVaccinations: vaccinationsCount || 0,
     });
   };
 
@@ -129,6 +157,30 @@ export function Dashboard() {
       label: 'Solicitações Pendentes',
       value: stats.pendingRequests,
       color: 'bg-yellow-500',
+    },
+    {
+      icon: Stethoscope,
+      label: 'Veterinários',
+      value: stats.totalVeterinarians,
+      color: 'bg-emerald-500',
+    },
+    {
+      icon: FileText,
+      label: 'Prontuários',
+      value: stats.totalMedicalRecords,
+      color: 'bg-orange-500',
+    },
+    {
+      icon: Pill,
+      label: 'Prescrições',
+      value: stats.totalPrescriptions,
+      color: 'bg-pink-500',
+    },
+    {
+      icon: Syringe,
+      label: 'Vacinações',
+      value: stats.totalVaccinations,
+      color: 'bg-sky-500',
     },
     {
       icon: DollarSign,
