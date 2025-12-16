@@ -90,47 +90,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      (async () => {
+        setSession(session);
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
+        if (session?.user) {
+          console.log('AuthContext - onAuthStateChange: User logged in:', session.user.id);
 
-        setProfile(profileData);
+          const { data: profileData } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        const { data: clinicUsersData } = await supabase
-          .from('clinic_users')
-          .select('clinic_id, role')
-          .eq('user_id', session.user.id)
-          .eq('is_active', true);
+          console.log('AuthContext - onAuthStateChange: Profile data:', profileData);
+          setProfile(profileData);
 
-        if (clinicUsersData && clinicUsersData.length > 0) {
-          const { data: clinicsData } = await supabase
-            .from('clinics')
-            .select('id, name')
-            .in('id', clinicUsersData.map((cu) => cu.clinic_id));
+          const { data: clinicUsersData } = await supabase
+            .from('clinic_users')
+            .select('clinic_id, role')
+            .eq('user_id', session.user.id)
+            .eq('is_active', true);
 
-          const enrichedClinics = clinicUsersData.map((cu) => ({
-            clinic_id: cu.clinic_id,
-            clinic_name: clinicsData?.find((c) => c.id === cu.clinic_id)?.name || 'Unknown',
-            role: cu.role,
-          }));
+          console.log('AuthContext - onAuthStateChange: Clinic users data:', clinicUsersData);
 
-          setClinics(enrichedClinics);
-          if (enrichedClinics.length > 0 && !currentClinicId) {
-            setCurrentClinicId(enrichedClinics[0].clinic_id);
+          if (clinicUsersData && clinicUsersData.length > 0) {
+            const { data: clinicsData } = await supabase
+              .from('clinics')
+              .select('id, name')
+              .in('id', clinicUsersData.map((cu) => cu.clinic_id));
+
+            console.log('AuthContext - onAuthStateChange: Clinics data:', clinicsData);
+
+            const enrichedClinics = clinicUsersData.map((cu) => ({
+              clinic_id: cu.clinic_id,
+              clinic_name: clinicsData?.find((c) => c.id === cu.clinic_id)?.name || 'Unknown',
+              role: cu.role,
+            }));
+
+            console.log('AuthContext - onAuthStateChange: Enriched clinics:', enrichedClinics);
+            setClinics(enrichedClinics);
+
+            if (enrichedClinics.length > 0) {
+              const currentIsValid = enrichedClinics.some(c => c.clinic_id === currentClinicId);
+              if (!currentIsValid) {
+                console.log('AuthContext - onAuthStateChange: Setting current clinic ID to:', enrichedClinics[0].clinic_id);
+                setCurrentClinicId(enrichedClinics[0].clinic_id);
+              } else {
+                console.log('AuthContext - onAuthStateChange: Current clinic ID is still valid:', currentClinicId);
+              }
+            }
+          } else {
+            console.warn('AuthContext - onAuthStateChange: No clinic users found');
+            setClinics([]);
+            setCurrentClinicId(null);
           }
+        } else {
+          console.log('AuthContext - onAuthStateChange: User logged out');
+          setProfile(null);
+          setClinics([]);
+          setCurrentClinicId(null);
         }
-      } else {
-        setProfile(null);
-        setClinics([]);
-        setCurrentClinicId(null);
-      }
+      })();
     });
 
     return () => {
