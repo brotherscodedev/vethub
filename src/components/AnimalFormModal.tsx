@@ -44,8 +44,20 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
         notes: animal.notes || '',
         tutor_id: animal.tutor_id || '',
       });
+    } else {
+      setFormData({
+        name: '',
+        species: 'Cão',
+        breed: '',
+        weight_kg: '',
+        birth_date: '',
+        microchip: '',
+        coat_color: '',
+        notes: '',
+        tutor_id: tutorId || '',
+      });
     }
-  }, [animal, currentClinicId]);
+  }, [animal, currentClinicId, tutorId]);
 
   const fetchTutors = async () => {
     const { data } = await supabase
