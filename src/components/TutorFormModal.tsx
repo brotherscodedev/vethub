@@ -14,6 +14,8 @@ interface TutorFormModalProps {
 export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormModalProps) {
   const { currentClinicId } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [createAccess, setCreateAccess] = useState(false);
+  const [password, setPassword] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     cpf: '',
@@ -57,6 +59,8 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
     console.log('TutorFormModal - Loading set to true');
 
     try {
+      let tutorId = tutor?.id;
+
       if (tutor) {
         console.log('TutorFormModal - Updating tutor:', tutor.id);
         const { data, error } = await supabase.from('tutors').update(formData).eq('id', tutor.id);
@@ -65,10 +69,36 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
       } else {
         const payload = { ...formData, clinic_id: currentClinicId };
         console.log('TutorFormModal - Inserting tutor with payload:', payload);
-        const { data, error } = await supabase.from('tutors').insert(payload).select();
+        const { data, error } = await supabase.from('tutors').insert(payload).select().single();
         console.log('TutorFormModal - Insert result:', { data, error });
         if (error) throw error;
+        tutorId = data.id;
       }
+
+      if (createAccess && formData.email && password && tutorId) {
+        console.log('TutorFormModal - Creating portal access for tutor');
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-tutor-account`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: password,
+            tutorId: tutorId,
+          }),
+        });
+
+        const result = await response.json();
+        console.log('TutorFormModal - Create account result:', result);
+
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao criar acesso ao portal');
+        }
+      }
+
       console.log('TutorFormModal - Success!');
       onSuccess();
       onClose();
@@ -147,6 +177,45 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+
+          {!tutor && formData.email && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="createAccess"
+                  checked={createAccess}
+                  onChange={(e) => setCreateAccess(e.target.checked)}
+                  className="mt-1"
+                />
+                <label htmlFor="createAccess" className="text-sm text-gray-700 cursor-pointer">
+                  <span className="font-medium">Criar acesso ao Portal do Tutor</span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    O tutor poderá acessar informações dos seus pets pelo aplicativo
+                  </p>
+                </label>
+              </div>
+
+              {createAccess && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Senha inicial *
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required={createAccess}
+                    placeholder="Senha para o tutor acessar o portal"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Esta senha será usada para o primeiro acesso do tutor
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
