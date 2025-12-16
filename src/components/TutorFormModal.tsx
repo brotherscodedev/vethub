@@ -15,7 +15,6 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
   const { currentClinicId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [createAccess, setCreateAccess] = useState(false);
-  const [password, setPassword] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     cpf: '',
@@ -75,7 +74,7 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
         tutorId = data.id;
       }
 
-      if (createAccess && formData.email && password && tutorId) {
+      if (createAccess && formData.email && formData.cpf && tutorId) {
         console.log('TutorFormModal - Creating portal access for tutor');
         const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-tutor-account`;
         const response = await fetch(apiUrl, {
@@ -86,7 +85,7 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
           },
           body: JSON.stringify({
             email: formData.email,
-            password: password,
+            password: formData.cpf,
             tutorId: tutorId,
           }),
         });
@@ -178,8 +177,8 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
             />
           </div>
 
-          {!tutor && formData.email && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+          {!tutor && formData.email && formData.cpf && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -193,27 +192,11 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
                   <p className="text-xs text-gray-600 mt-1">
                     O tutor poderá acessar informações dos seus pets pelo aplicativo
                   </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    A senha inicial será o CPF do tutor
+                  </p>
                 </label>
               </div>
-
-              {createAccess && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Senha inicial *
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required={createAccess}
-                    placeholder="Senha para o tutor acessar o portal"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Esta senha será usada para o primeiro acesso do tutor
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
