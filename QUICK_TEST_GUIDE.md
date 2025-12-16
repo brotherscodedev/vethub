@@ -34,7 +34,22 @@ Senha: vet123456
 
 ---
 
-### 3. Tutor (Dono do Pet)
+### 3. Recepcionista
+```
+URL: http://localhost:5173/receptionist-login
+Email: receptionist@vetclinic.com
+Senha: 12345678900
+```
+
+**Funcionalidades:**
+- Ver e aprovar solicitações de consulta
+- Gerenciar agenda de consultas
+- Criar e editar cadastro de tutores
+- Criar e editar cadastro de animais
+
+---
+
+### 4. Tutor (Dono do Pet)
 ```
 URL: http://localhost:5173/tutor-login
 Email: tutor@example.com
@@ -115,7 +130,15 @@ Senha: tutor123456
 6. Nome: Dr. João Silva
 7. CRMV: CRMV-SP-12345
 
-**3. Criar Tutor:**
+**3. Criar Recepcionista:**
+1. Login como admin
+2. Vá para **Recepcionistas**
+3. Clique **"Novo Recepcionista"**
+4. Email: `receptionist@vetclinic.com`
+5. CPF: 123.456.789-00 (senha será o CPF sem formatação: 12345678900)
+6. Nome: Ana Costa
+
+**4. Criar Tutor:**
 1. Login como admin
 2. Vá para **Tutores**
 3. Clique **"Novo Tutor"**
@@ -138,13 +161,15 @@ Senha: tutor123456
 ## URLs Importantes
 
 ```
-Admin:        /login
-Veterinário:  /veterinarian-login
-Tutor:        /tutor-login
-Signup:       /signup
-Dashboard:    /dashboard (apenas admin)
-Portal Vet:   /veterinarian-portal
-Portal Tutor: /tutor-portal
+Admin:           /login
+Veterinário:     /veterinarian-login
+Recepcionista:   /receptionist-login
+Tutor:           /tutor-login
+Signup:          /signup
+Dashboard:       /clinic/dashboard (apenas admin)
+Portal Vet:      /veterinarian-portal
+Portal Recepção: /reception-portal
+Portal Tutor:    /tutor-portal
 ```
 
 ---
@@ -170,29 +195,29 @@ Portal Tutor: /tutor-portal
 ```
 ┌─────────────────────────────────────────────────┐
 │              ADMIN DA CLÍNICA                    │
-│  ✓ Dashboard completo                           │
+│  ✓ Dashboard completo (9 cards)                 │
 │  ✓ Gerenciar tudo                               │
 │  ✓ Ver dados de veterinários                    │
-│  ✓ Aprovar consultas                            │
+│  ✓ Criar veterinários e recepcionistas          │
 └─────────────────────────────────────────────────┘
-                    │
-                    ├──> Cria e gerencia
-                    │
-┌─────────────────────────────────────────────────┐
-│              VETERINÁRIO                         │
-│  ✓ Ver animais da clínica                       │
-│  ✓ Criar prontuários                            │
-│  ✓ Criar prescrições                            │
-│  ✓ Registrar vacinações                         │
-└─────────────────────────────────────────────────┘
-                    │
-                    ├──> Cria dados para
-                    │
+           │                      │
+           ├──> Cria              ├──> Cria
+           │                      │
+┌──────────────────────┐  ┌──────────────────────┐
+│    VETERINÁRIO       │  │   RECEPCIONISTA      │
+│  ✓ Ver animais       │  │  ✓ Aprovar consultas │
+│  ✓ Criar prontuários │  │  ✓ Gerenciar agenda  │
+│  ✓ Criar prescrições │  │  ✓ Criar tutores     │
+│  ✓ Registrar vacinas │  │  ✓ Criar animais     │
+└──────────────────────┘  └──────────────────────┘
+           │                      │
+           └──> Dados visíveis <──┘
+                   para
 ┌─────────────────────────────────────────────────┐
 │              TUTOR                               │
 │  ✓ Ver seus animais                             │
 │  ✓ Ver histórico médico                         │
-│  ✓ Solicitar consultas                          │
+│  ✓ Solicitar consultas → Recepção aprova        │
 │  ✓ Ver prescrições/vacinas                      │
 └─────────────────────────────────────────────────┘
 ```

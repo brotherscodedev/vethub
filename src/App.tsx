@@ -17,6 +17,9 @@ import { TutorLogin } from './pages/TutorLogin';
 import Veterinarians from './pages/Veterinarians';
 import VeterinarianLogin from './pages/VeterinarianLogin';
 import VeterinarianPortal from './pages/VeterinarianPortal';
+import { Receptionists } from './pages/Receptionists';
+import { ReceptionistLogin } from './pages/ReceptionistLogin';
+import { ReceptionPortal } from './pages/ReceptionPortal';
 
 function App() {
   return (
@@ -30,6 +33,8 @@ function App() {
           <Route path="/tutor/login" element={<TutorLogin />} />
           <Route path="/veterinarian-login" element={<VeterinarianLogin />} />
           <Route path="/veterinarian-portal" element={<VeterinarianPortal />} />
+          <Route path="/receptionist-login" element={<ReceptionistLogin />} />
+          <Route path="/reception-portal" element={<ReceptionPortal />} />
 
           <Route
             path="/clinic/dashboard"
@@ -100,6 +105,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Veterinarians />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clinic/receptionists"
+            element={
+              <ProtectedRoute>
+                <Receptionists />
               </ProtectedRoute>
             }
           />

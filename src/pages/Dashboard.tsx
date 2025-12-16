@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Users, Calendar, FileText, DollarSign, Check, X, Clock, Stethoscope, Syringe, Pill } from 'lucide-react';
+import { Users, Calendar, FileText, DollarSign, Check, X, Clock, Stethoscope, Syringe, Pill, UserCircle } from 'lucide-react';
 import { AppointmentRequest } from '../types';
 
 export function Dashboard() {
@@ -13,6 +13,7 @@ export function Dashboard() {
     pendingRequests: 0,
     thisMonthRevenue: 0,
     totalVeterinarians: 0,
+    totalReceptionists: 0,
     totalMedicalRecords: 0,
     totalPrescriptions: 0,
     totalVaccinations: 0,
@@ -51,6 +52,11 @@ export function Dashboard() {
       .select('*', { count: 'exact', head: true })
       .eq('clinic_id', currentClinicId);
 
+    const { count: receptionistsCount } = await supabase
+      .from('receptionists')
+      .select('*', { count: 'exact', head: true })
+      .eq('clinic_id', currentClinicId);
+
     const { count: medicalRecordsCount } = await supabase
       .from('medical_records')
       .select('*', { count: 'exact', head: true })
@@ -72,6 +78,7 @@ export function Dashboard() {
       pendingRequests: pendingCount || 0,
       thisMonthRevenue: 0,
       totalVeterinarians: veterinariansCount || 0,
+      totalReceptionists: receptionistsCount || 0,
       totalMedicalRecords: medicalRecordsCount || 0,
       totalPrescriptions: prescriptionsCount || 0,
       totalVaccinations: vaccinationsCount || 0,
@@ -163,6 +170,12 @@ export function Dashboard() {
       label: 'Veterinários',
       value: stats.totalVeterinarians,
       color: 'bg-emerald-500',
+    },
+    {
+      icon: UserCircle,
+      label: 'Recepcionistas',
+      value: stats.totalReceptionists,
+      color: 'bg-teal-500',
     },
     {
       icon: FileText,

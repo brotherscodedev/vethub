@@ -55,7 +55,34 @@ Este documento contém todos os perfis de teste necessários para testar todas a
 
 ---
 
-## 3. Tutor (Dono do Pet)
+## 3. Recepcionista
+
+**Email:** `receptionist@vetclinic.com`
+**Senha:** `12345678900` (CPF sem formatação)
+**Nome:** Ana Costa
+**CPF:** 123.456.789-00
+**Papel:** Recepcionista da Clínica
+
+**O que pode fazer:**
+- Ver e aprovar solicitações de consulta
+- Gerenciar agenda de consultas
+- Criar e editar cadastro de tutores
+- Criar e editar cadastro de animais
+- Ver veterinários da clínica
+- Alterar senha do perfil
+
+**Como testar:**
+1. Acesse `/receptionist-login`
+2. Faça login com as credenciais acima
+3. Navegue pelas abas:
+   - **Solicitações:** Ver e aprovar/rejeitar solicitações de consulta
+   - **Agenda:** Ver calendário de consultas agendadas
+   - **Tutores:** Gerenciar cadastro de tutores
+   - **Animais:** Gerenciar cadastro de animais
+
+---
+
+## 4. Tutor (Dono do Pet)
 
 **Email:** `tutor@example.com`
 **Senha:** `tutor123456`
@@ -148,6 +175,11 @@ VETERINÁRIO:
 Email: vet@vetclinic.com
 Senha: vet123456
 URL: /veterinarian-login
+
+RECEPCIONISTA:
+Email: receptionist@vetclinic.com
+Senha: 12345678900
+URL: /receptionist-login
 
 TUTOR:
 Email: tutor@example.com
