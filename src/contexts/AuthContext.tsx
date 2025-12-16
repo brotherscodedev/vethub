@@ -74,7 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setClinics(enrichedClinics);
             if (enrichedClinics.length > 0) {
+              console.log('AuthContext - Setting current clinic ID:', enrichedClinics[0].clinic_id);
               setCurrentClinicId(enrichedClinics[0].clinic_id);
+            } else {
+              console.warn('AuthContext - No clinics found for user');
             }
           }
         }

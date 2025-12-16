@@ -43,28 +43,47 @@ export function TutorFormModal({ isOpen, onClose, onSuccess, tutor }: TutorFormM
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('TutorFormModal - handleSubmit called');
+    console.log('TutorFormModal - currentClinicId:', currentClinicId);
+    console.log('TutorFormModal - formData:', formData);
+
     if (!currentClinicId) {
+      console.error('TutorFormModal - No clinic ID');
       alert('Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.');
       return;
     }
 
     setLoading(true);
+    console.log('TutorFormModal - Loading set to true');
 
     try {
       if (tutor) {
-        const { error } = await supabase.from('tutors').update(formData).eq('id', tutor.id);
+        console.log('TutorFormModal - Updating tutor:', tutor.id);
+        const { data, error } = await supabase.from('tutors').update(formData).eq('id', tutor.id);
+        console.log('TutorFormModal - Update result:', { data, error });
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('tutors').insert({ ...formData, clinic_id: currentClinicId });
+        const payload = { ...formData, clinic_id: currentClinicId };
+        console.log('TutorFormModal - Inserting tutor with payload:', payload);
+        const { data, error } = await supabase.from('tutors').insert(payload).select();
+        console.log('TutorFormModal - Insert result:', { data, error });
         if (error) throw error;
       }
+      console.log('TutorFormModal - Success!');
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Error saving tutor:', error);
-      alert(`Erro ao salvar tutor: ${error.message || 'Erro desconhecido'}`);
+      console.error('TutorFormModal - Error saving tutor:', error);
+      console.error('TutorFormModal - Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      alert(`Erro ao salvar tutor: ${error.message || 'Erro desconhecido'}\n\nDetalhes: ${error.details || error.hint || ''}`);
     } finally {
       setLoading(false);
+      console.log('TutorFormModal - Loading set to false');
     }
   };
 

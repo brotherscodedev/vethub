@@ -59,12 +59,18 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('AnimalFormModal - handleSubmit called');
+    console.log('AnimalFormModal - currentClinicId:', currentClinicId);
+    console.log('AnimalFormModal - formData:', formData);
+
     if (!currentClinicId) {
+      console.error('AnimalFormModal - No clinic ID');
       alert('Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.');
       return;
     }
 
     setLoading(true);
+    console.log('AnimalFormModal - Loading set to true');
 
     try {
       const payload = {
@@ -73,20 +79,34 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
         clinic_id: currentClinicId,
       };
 
+      console.log('AnimalFormModal - Payload:', payload);
+
       if (animal) {
-        const { error } = await supabase.from('animals').update(payload).eq('id', animal.id);
+        console.log('AnimalFormModal - Updating animal:', animal.id);
+        const { data, error } = await supabase.from('animals').update(payload).eq('id', animal.id).select();
+        console.log('AnimalFormModal - Update result:', { data, error });
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('animals').insert(payload);
+        console.log('AnimalFormModal - Inserting animal');
+        const { data, error } = await supabase.from('animals').insert(payload).select();
+        console.log('AnimalFormModal - Insert result:', { data, error });
         if (error) throw error;
       }
+      console.log('AnimalFormModal - Success!');
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Error saving animal:', error);
-      alert(`Erro ao salvar animal: ${error.message || 'Erro desconhecido'}`);
+      console.error('AnimalFormModal - Error saving animal:', error);
+      console.error('AnimalFormModal - Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      alert(`Erro ao salvar animal: ${error.message || 'Erro desconhecido'}\n\nDetalhes: ${error.details || error.hint || ''}`);
     } finally {
       setLoading(false);
+      console.log('AnimalFormModal - Loading set to false');
     }
   };
 
