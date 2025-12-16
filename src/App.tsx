@@ -13,6 +13,7 @@ import { Vaccinations } from './pages/Vaccinations';
 import { PDV } from './pages/PDV';
 import { Settings } from './pages/Settings';
 import { TutorPortal } from './pages/TutorPortal';
+import { TutorLogin } from './pages/TutorLogin';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/tutor" element={<TutorPortal />} />
+          <Route path="/tutor/login" element={<TutorLogin />} />
 
           <Route
             path="/clinic/dashboard"

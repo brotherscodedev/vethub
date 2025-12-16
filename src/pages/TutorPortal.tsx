@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PublicLayout } from '../components/layouts/PublicLayout';
-import { Heart, Calendar, Syringe, Image } from 'lucide-react';
+import { Heart, Calendar, Syringe, Image, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Animal, Vaccination, MedicalRecordFile } from '../types';
@@ -96,29 +96,126 @@ export function TutorPortal() {
   if (!user) {
     return (
       <PublicLayout>
-        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12">
-          <div className="text-center">
-            <Heart className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Portal do Tutor</h1>
-            <p className="text-gray-600 mb-8">Acesse informações do seu pet</p>
-            <button
-              onClick={() => (window.location.href = '/auth/login')}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-            >
-              Fazer Login
-            </button>
+        <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-pink-50 to-rose-50">
+          <div className="max-w-7xl mx-auto px-4 py-20">
+            <div className="text-center mb-16">
+              <div className="flex justify-center mb-6">
+                <div className="bg-gradient-to-br from-pink-500 to-rose-500 p-6 rounded-3xl shadow-2xl transform hover:scale-105 transition">
+                  <Heart className="w-20 h-20 text-white" />
+                </div>
+              </div>
+              <h1 className="text-5xl font-bold text-gray-900 mb-4">
+                Portal do Tutor
+              </h1>
+              <p className="text-xl text-gray-600 mb-8">
+                Acompanhe a saúde e bem-estar dos seus pets
+              </p>
+              <button
+                onClick={() => (window.location.href = '/tutor/login')}
+                className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-8 py-4 rounded-xl font-semibold hover:from-pink-600 hover:to-rose-600 transition transform hover:scale-105 active:scale-95 shadow-lg text-lg"
+              >
+                Acessar Meu Portal
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 mt-16">
+              <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition">
+                <div className="bg-pink-100 w-14 h-14 rounded-xl flex items-center justify-center mb-4">
+                  <Heart className="w-7 h-7 text-pink-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  Informações dos Pets
+                </h3>
+                <p className="text-gray-600">
+                  Acesse todas as informações sobre seus animais de estimação em um só lugar
+                </p>
+              </div>
+
+              <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition">
+                <div className="bg-rose-100 w-14 h-14 rounded-xl flex items-center justify-center mb-4">
+                  <Calendar className="w-7 h-7 text-rose-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  Agende Consultas
+                </h3>
+                <p className="text-gray-600">
+                  Solicite agendamentos online de forma rápida e prática
+                </p>
+              </div>
+
+              <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition">
+                <div className="bg-pink-100 w-14 h-14 rounded-xl flex items-center justify-center mb-4">
+                  <Syringe className="w-7 h-7 text-pink-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  Histórico de Vacinas
+                </h3>
+                <p className="text-gray-600">
+                  Acompanhe o cartão de vacinação e não perca nenhuma dose
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-16 bg-white rounded-2xl shadow-lg p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                Como funciona?
+              </h2>
+              <div className="grid md:grid-cols-3 gap-6 mt-8">
+                <div className="text-center">
+                  <div className="bg-pink-500 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">
+                    1
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Peça Acesso</h4>
+                  <p className="text-sm text-gray-600">
+                    Solicite à sua clínica veterinária para criar seu acesso ao portal
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-rose-500 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">
+                    2
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Faça Login</h4>
+                  <p className="text-sm text-gray-600">
+                    Use seu email e CPF para fazer o primeiro acesso
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-pink-500 text-white w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">
+                    3
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Acompanhe</h4>
+                  <p className="text-sm text-gray-600">
+                    Veja informações, vacinas e exames dos seus pets
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </PublicLayout>
     );
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/tutor';
+  };
+
   return (
     <PublicLayout>
       <div className="max-w-6xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Meus Pets</h1>
-          <p className="text-gray-600">Acompanhe a saúde dos seus animais</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Meus Pets</h1>
+            <p className="text-gray-600">Acompanhe a saúde dos seus animais</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
         </div>
 
         {animals.length === 0 ? (
