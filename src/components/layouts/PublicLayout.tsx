@@ -13,7 +13,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
             <Activity className="w-6 h-6 text-blue-600" />
             <span className="text-xl font-bold text-gray-900">VetHub</span>
           </div>
@@ -38,7 +41,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
       <footer className="bg-gray-50 border-t">
         <div className="max-w-7xl mx-auto px-4 py-8 text-center text-gray-600 text-sm">
-          <p>&copy; 2024 VetHub. Todos os direitos reservados.</p>
+          <p>
+            &copy; {new Date().getFullYear()} VetHub. Todos os direitos
+            reservados.
+          </p>
         </div>
       </footer>
     </div>
