@@ -17,7 +17,12 @@ interface UserProfile {
   role: string;
 }
 
-export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }: AppointmentFormModalProps) {
+export function AppointmentFormModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  appointment,
+}: AppointmentFormModalProps) {
   const { currentClinicId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -99,7 +104,6 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
 
   const fetchVeterinarians = async () => {
     if (!currentClinicId) return;
-
     const { data: clinicUsers } = await supabase
       .from('clinic_users')
       .select('user_id')
@@ -111,11 +115,14 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
       const { data } = await supabase
         .from('user_profiles')
         .select('id, full_name')
-        .in('id', clinicUsers.map(cu => cu.user_id))
+        .in(
+          'id',
+          clinicUsers.map((cu) => cu.user_id)
+        )
         .order('full_name');
 
       if (data) {
-        setVeterinarians(data.map(d => ({ ...d, role: 'veterinarian' })));
+        setVeterinarians(data.map((d) => ({ ...d, role: 'veterinarian' })));
       }
     }
   };
@@ -124,14 +131,18 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
     e.preventDefault();
 
     if (!currentClinicId) {
-      alert('Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.');
+      alert(
+        'Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.'
+      );
       return;
     }
 
     setLoading(true);
 
     try {
-      const scheduledAt = new Date(`${formData.scheduled_at}T${formData.scheduled_time}`);
+      const scheduledAt = new Date(
+        `${formData.scheduled_at}T${formData.scheduled_time}`
+      );
 
       const payload = {
         animal_id: formData.animal_id,
@@ -144,7 +155,10 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
       };
 
       if (appointment) {
-        const { error } = await supabase.from('appointments').update(payload).eq('id', appointment.id);
+        const { error } = await supabase
+          .from('appointments')
+          .update(payload)
+          .eq('id', appointment.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from('appointments').insert(payload);
@@ -156,7 +170,9 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
       resetForm();
     } catch (error: any) {
       console.error('Error saving appointment:', error);
-      alert(`Erro ao salvar agendamento: ${error.message || 'Erro desconhecido'}`);
+      alert(
+        `Erro ao salvar agendamento: ${error.message || 'Erro desconhecido'}`
+      );
     } finally {
       setLoading(false);
     }
@@ -192,7 +208,9 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
         <form onSubmit={handleSubmit} className="space-y-4">
           {!appointment && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tutor *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tutor *
+              </label>
               <select
                 onChange={(e) => handleTutorChange(e.target.value)}
                 required
@@ -209,10 +227,14 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Animal *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Animal *
+            </label>
             <select
               value={formData.animal_id}
-              onChange={(e) => setFormData({ ...formData, animal_id: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, animal_id: e.target.value })
+              }
               required
               disabled={animals.length === 0}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
@@ -227,10 +249,14 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Veterinário *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Veterinário *
+            </label>
             <select
               value={formData.veterinarian_id}
-              onChange={(e) => setFormData({ ...formData, veterinarian_id: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, veterinarian_id: e.target.value })
+              }
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
@@ -245,11 +271,15 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Data *
+              </label>
               <input
                 type="date"
                 value={formData.scheduled_at}
-                onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, scheduled_at: e.target.value })
+                }
                 required
                 min={new Date().toISOString().split('T')[0]}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -257,11 +287,15 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Horário *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Horário *
+              </label>
               <input
                 type="time"
                 value={formData.scheduled_time}
-                onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, scheduled_time: e.target.value })
+                }
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -270,11 +304,15 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duração (minutos) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Duração (minutos) *
+              </label>
               <input
                 type="number"
                 value={formData.duration_minutes}
-                onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, duration_minutes: e.target.value })
+                }
                 required
                 min="15"
                 step="15"
@@ -283,10 +321,14 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
               <select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="scheduled">Agendado</option>
@@ -300,10 +342,14 @@ export function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment }
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Observações
+            </label>
             <textarea
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
