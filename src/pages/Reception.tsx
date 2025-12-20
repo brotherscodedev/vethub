@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Search, Plus, User, Dog, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, User, Edit, Trash2 } from 'lucide-react';
 import { Tutor, Animal } from '../types';
 import { TutorFormModal } from '../components/TutorFormModal';
 import { AnimalFormModal } from '../components/AnimalFormModal';
+import { getSpeciesIcon } from '../utils/getSpeciesIcon';
+import { maskPhone } from '../utils/validationsMasks';
 
 export function Reception() {
   const { currentClinicId } = useAuth();
@@ -16,7 +18,9 @@ export function Reception() {
   const [animalModalOpen, setAnimalModalOpen] = useState(false);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | undefined>();
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | undefined>();
-  const [selectedTutorForAnimal, setSelectedTutorForAnimal] = useState<string | undefined>();
+  const [selectedTutorForAnimal, setSelectedTutorForAnimal] = useState<
+    string | undefined
+  >();
 
   useEffect(() => {
     if (!currentClinicId) return;
@@ -93,7 +97,9 @@ export function Reception() {
     (tutor) =>
       tutor.name.toLowerCase().includes(search.toLowerCase()) ||
       tutor.phone?.includes(search) ||
-      tutor.animals.some((animal) => animal.name.toLowerCase().includes(search.toLowerCase()))
+      tutor.animals.some((animal) =>
+        animal.name.toLowerCase().includes(search.toLowerCase())
+      )
   );
 
   return (
@@ -134,21 +140,32 @@ export function Reception() {
           <div className="text-center py-12">
             <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-2">Nenhum tutor cadastrado</p>
-            <p className="text-sm text-gray-400">Comece cadastrando o primeiro tutor da clínica</p>
+            <p className="text-sm text-gray-400">
+              Comece cadastrando o primeiro tutor da clínica
+            </p>
           </div>
         ) : (
           <div className="grid gap-4">
             {filteredTutors.map((tutor) => (
-              <div key={tutor.id} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition">
+              <div
+                key={tutor.id}
+                className="bg-white rounded-lg shadow p-6 hover:shadow-md transition"
+              >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-100 p-3 rounded-full">
                       <User className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{tutor.name}</h3>
-                      <p className="text-sm text-gray-600">{tutor.phone || 'Sem telefone'}</p>
-                      {tutor.email && <p className="text-sm text-gray-500">{tutor.email}</p>}
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {tutor.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {tutor.phone ? maskPhone(tutor.phone) : 'Sem telefone'}
+                      </p>
+                      {tutor.email && (
+                        <p className="text-sm text-gray-500">{tutor.email}</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -171,7 +188,9 @@ export function Reception() {
 
                 {tutor.animals.length > 0 && (
                   <div className="border-t pt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Animais:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      Animais:
+                    </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                       {tutor.animals.map((animal) => (
                         <div
@@ -179,8 +198,10 @@ export function Reception() {
                           className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100"
                         >
                           <div className="flex items-center gap-2">
-                            <Dog className="w-4 h-4 text-gray-600" />
-                            <span className="text-sm text-gray-700">{animal.name}</span>
+                            {getSpeciesIcon(animal.species)}
+                            <span className="text-sm text-gray-700">
+                              {animal.name}
+                            </span>
                           </div>
                           <div className="flex gap-1">
                             <button

@@ -1,5 +1,17 @@
-export type UserRole = 'super_admin' | 'admin' | 'veterinarian' | 'receptionist' | 'tutor';
-export type AppointmentStatus = 'pending' | 'scheduled' | 'confirmed' | 'reception' | 'in_progress' | 'completed' | 'cancelled';
+export type UserRole =
+  | 'super_admin'
+  | 'admin'
+  | 'veterinarian'
+  | 'receptionist'
+  | 'tutor';
+export type AppointmentStatus =
+  | 'pending'
+  | 'scheduled'
+  | 'confirmed'
+  | 'reception'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
 export type PrescriptionStatus = 'draft' | 'issued' | 'sent' | 'viewed';
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
 
@@ -28,6 +40,7 @@ export interface Tutor {
   email?: string;
   phone?: string;
   address?: string;
+  number?: string;
   city?: string;
   state?: string;
   zip_code?: string;

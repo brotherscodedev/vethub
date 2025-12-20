@@ -3,6 +3,8 @@ import { X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Animal, Tutor } from '../types';
+import { SPECIES } from '../types/species';
+import { maskWeight } from '../utils/validationsMasks';
 
 interface AnimalFormModalProps {
   isOpen: boolean;
@@ -12,7 +14,13 @@ interface AnimalFormModalProps {
   tutorId?: string;
 }
 
-export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }: AnimalFormModalProps) {
+export function AnimalFormModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  animal,
+  tutorId,
+}: AnimalFormModalProps) {
   const { currentClinicId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -27,6 +35,7 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
     notes: '',
     tutor_id: tutorId || '',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (currentClinicId) {
@@ -71,40 +80,41 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('AnimalFormModal - handleSubmit called');
-    console.log('AnimalFormModal - currentClinicId:', currentClinicId);
-    console.log('AnimalFormModal - formData:', formData);
+    if (!validate()) return;
 
     if (!currentClinicId) {
       console.error('AnimalFormModal - No clinic ID');
-      alert('Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.');
+      alert(
+        'Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.'
+      );
       return;
     }
 
     setLoading(true);
-    console.log('AnimalFormModal - Loading set to true');
 
     try {
       const payload = {
         ...formData,
-        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : null,
+        weight_kg: formData.weight_kg
+          ? parseFloat(formData.weight_kg.replace(/\D/g, ''))
+          : null,
         clinic_id: currentClinicId,
       };
 
-      console.log('AnimalFormModal - Payload:', payload);
-
       if (animal) {
-        console.log('AnimalFormModal - Updating animal:', animal.id);
-        const { data, error } = await supabase.from('animals').update(payload).eq('id', animal.id).select();
-        console.log('AnimalFormModal - Update result:', { data, error });
+        const { error } = await supabase
+          .from('animals')
+          .update(payload)
+          .eq('id', animal.id)
+          .select();
         if (error) throw error;
       } else {
-        console.log('AnimalFormModal - Inserting animal');
-        const { data, error } = await supabase.from('animals').insert(payload).select();
-        console.log('AnimalFormModal - Insert result:', { data, error });
+        const { error } = await supabase
+          .from('animals')
+          .insert(payload)
+          .select();
         if (error) throw error;
       }
-      console.log('AnimalFormModal - Success!');
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -115,13 +125,28 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
         hint: error.hint,
         code: error.code,
       });
-      alert(`Erro ao salvar animal: ${error.message || 'Erro desconhecido'}\n\nDetalhes: ${error.details || error.hint || ''}`);
+      alert(
+        `Erro ao salvar animal: ${
+          error.message || 'Erro desconhecido'
+        }\n\nDetalhes: ${error.details || error.hint || ''}`
+      );
     } finally {
       setLoading(false);
-      console.log('AnimalFormModal - Loading set to false');
     }
   };
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.tutor_id) newErrors.tutor_id = 'O tutor é obrigatório.';
+
+    if (!formData.name.trim())
+      newErrors.name = 'O nome do animal é obrigatório.';
+
+    if (!formData.species) newErrors.species = 'A espécie é obrigatória.';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   if (!isOpen) return null;
 
   return (
@@ -136,14 +161,23 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tutor *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tutor *
+            </label>
             <select
               value={formData.tutor_id}
-              onChange={(e) => setFormData({ ...formData, tutor_id: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, tutor_id: e.target.value });
+                if (errors.tutor_id) setErrors({ ...errors, tutor_id: '' });
+              }}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                errors.tutor_id
+                  ? 'border-red-500 focus:ring-red-200'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             >
               <option value="">Selecione um tutor</option>
               {tutors.map((tutor) => (
@@ -152,43 +186,79 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
                 </option>
               ))}
             </select>
+            {errors.tutor_id && (
+              <span className="text-red-500 text-xs mt-1 font-medium">
+                {errors.tutor_id}
+              </span>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nome *
+            </label>
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: '' });
+              }}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                errors.name
+                  ? 'border-red-500 focus:ring-red-200'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             />
+            {errors.name && (
+              <span className="text-red-500 text-xs mt-1 font-medium">
+                {errors.name}
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Espécie *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Espécie *
+              </label>
               <select
                 value={formData.species}
-                onChange={(e) => setFormData({ ...formData, species: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, species: e.target.value });
+                  if (errors.species) setErrors({ ...errors, species: '' });
+                }}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                  errors.species
+                    ? 'border-red-500 focus:ring-red-200'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
               >
-                <option value="Cão">Cão</option>
-                <option value="Gato">Gato</option>
-                <option value="Ave">Ave</option>
-                <option value="Réptil">Réptil</option>
-                <option value="Roedor">Roedor</option>
-                <option value="Outro">Outro</option>
+                {SPECIES.map((state) => (
+                  <option key={state.value} value={state.value}>
+                    {state.label}
+                  </option>
+                ))}
               </select>
+              {errors.species && (
+                <span className="text-red-500 text-xs mt-1 font-medium">
+                  {errors.species}
+                </span>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Raça</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Raça
+              </label>
               <input
                 type="text"
                 value={formData.breed}
-                onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, breed: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -196,12 +266,20 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Peso (kg)
+              </label>
               <input
-                type="number"
-                step="0.1"
+                type="text"
                 value={formData.weight_kg}
-                onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    weight_kg: maskWeight(e.target.value),
+                  })
+                }
+                placeholder="00,0"
+                maxLength={6}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -213,7 +291,9 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
               <input
                 type="date"
                 value={formData.birth_date}
-                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, birth_date: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -221,31 +301,43 @@ export function AnimalFormModal({ isOpen, onClose, onSuccess, animal, tutorId }:
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Microchip</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Microchip
+              </label>
               <input
                 type="text"
                 value={formData.microchip}
-                onChange={(e) => setFormData({ ...formData, microchip: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, microchip: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Pelagem</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pelagem
+              </label>
               <input
                 type="text"
                 value={formData.coat_color}
-                onChange={(e) => setFormData({ ...formData, coat_color: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, coat_color: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Observações
+            </label>
             <textarea
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
