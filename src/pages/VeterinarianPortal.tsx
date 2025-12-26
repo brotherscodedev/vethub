@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut,
@@ -12,7 +12,9 @@ import {
   Key,
   Search,
   Plus,
-  Edit
+  Edit,
+  Clock,
+  Filter
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VetAnimalEditModal } from '../components/VetAnimalEditModal';
@@ -20,6 +22,7 @@ import { VetMedicalRecordModal } from '../components/VetMedicalRecordModal';
 import { VetVaccinationModal } from '../components/VetVaccinationModal';
 import { VetPrescriptionModal } from '../components/VetPrescriptionModal';
 
+// --- Interfaces ---
 interface Veterinarian {
   id: string;
   name: string;
@@ -37,6 +40,21 @@ interface Animal {
   tutor: {
     name: string;
     phone: string;
+  };
+}
+
+interface Appointment {
+  id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  status: string;
+  notes: string | null;
+  animal: {
+    name: string;
+    species: string;
+    tutor: {
+      name: string;
+    }
   };
 }
 
@@ -79,8 +97,20 @@ interface Vaccination {
 
 export default function VeterinarianPortal() {
   const [veterinarian, setVeterinarian] = useState<Veterinarian | null>(null);
-  const [activeTab, setActiveTab] = useState<'animals' | 'records' | 'prescriptions' | 'vaccinations' | 'profile'>('animals');
+  const [activeTab, setActiveTab] = useState<'appointments' | 'animals' | 'records' | 'prescriptions' | 'vaccinations' | 'profile'>('appointments');
+  
+  // 1. CORREÇÃO: Função para pegar a data local correta (evita bug de fuso horário UTC)
+  const getLocalDate = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    const localDate = new Date(now.getTime() - offset);
+    return localDate.toISOString().split('T')[0];
+  };
+
+  const [selectedDate, setSelectedDate] = useState(getLocalDate());
+  
   const [animals, setAnimals] = useState<Animal[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
@@ -94,9 +124,81 @@ export default function VeterinarianPortal() {
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const navigate = useNavigate();
 
+  // Carrega os dados iniciais do veterinário
   useEffect(() => {
     loadVeterinarianData();
   }, []);
+
+  // 2. CORREÇÃO: useCallback para garantir estabilidade da função
+  const fetchAppointments = useCallback(async () => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Filtra do inicio (00:00:00) ao fim (23:59:59) do dia selecionado
+        const startOfDay = `${selectedDate}T00:00:00`;
+        const endOfDay = `${selectedDate}T23:59:59`;
+
+        const { data: appointmentsData, error } = await supabase
+        .from('appointments')
+        .select(`
+            id,
+            scheduled_at,
+            duration_minutes,
+            status,
+            notes,
+            animal:animals(
+              name, 
+              species,
+              tutor:tutors(name)
+            )
+        `)
+        .eq('veterinarian_id', user.id)
+        .gte('scheduled_at', startOfDay)
+        .lte('scheduled_at', endOfDay)
+        .order('scheduled_at', { ascending: true });
+
+        if (error) throw error;
+        setAppointments(appointmentsData || []);
+    } catch (error) {
+        console.error('Erro ao buscar agendamentos:', error);
+    }
+  }, [selectedDate]); // Recria a função apenas se a data mudar
+
+  // 3. CORREÇÃO: Adicionado 'veterinarian' e 'fetchAppointments' nas dependências
+  // Isso garante que a busca aconteça assim que o login for confirmado E quando a data mudar
+  useEffect(() => {
+    if (veterinarian) { 
+       fetchAppointments();
+    }
+  }, [selectedDate, veterinarian, fetchAppointments]);
+
+
+  const toggleAppointmentStatus = async (appointmentId: string, currentStatus: string) => {
+    try {
+        const newStatus = currentStatus === 'completed' ? 'scheduled' : 'completed';
+        
+        // Atualização Otimista
+        setAppointments(prev => prev.map(apt => 
+            apt.id === appointmentId ? { ...apt, status: newStatus } : apt
+        ));
+
+        const { error } = await supabase
+            .from('appointments')
+            .update({ status: newStatus })
+            .eq('id', appointmentId);
+
+        if (error) {
+            setAppointments(prev => prev.map(apt => 
+                apt.id === appointmentId ? { ...apt, status: currentStatus } : apt
+            ));
+            alert('Erro ao atualizar status');
+            console.error(error);
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+    }
+  };
 
   const loadVeterinarianData = async () => {
     try {
@@ -119,6 +221,7 @@ export default function VeterinarianPortal() {
 
       setVeterinarian(vetData);
 
+      // Carrega os outros dados
       const { data: animalsData } = await supabase
         .from('animals')
         .select(`
@@ -130,7 +233,6 @@ export default function VeterinarianPortal() {
           tutor:tutors(name, phone)
         `)
         .order('name');
-
       setAnimals(animalsData || []);
 
       const { data: recordsData } = await supabase
@@ -144,7 +246,6 @@ export default function VeterinarianPortal() {
           animal:animals(name, species)
         `)
         .order('date', { ascending: false });
-
       setMedicalRecords(recordsData || []);
 
       const { data: prescriptionsData } = await supabase
@@ -159,7 +260,6 @@ export default function VeterinarianPortal() {
           animal:animals(name, species)
         `)
         .order('prescribed_at', { ascending: false });
-
       setPrescriptions(prescriptionsData || []);
 
       const { data: vaccinationsData } = await supabase
@@ -173,7 +273,6 @@ export default function VeterinarianPortal() {
           animal:animals(name, species)
         `)
         .order('date', { ascending: false });
-
       setVaccinations(vaccinationsData || []);
 
     } catch (err) {
@@ -196,12 +295,35 @@ export default function VeterinarianPortal() {
       });
 
       if (error) throw error;
-
       alert('Senha alterada com sucesso!');
       setShowPasswordChange(false);
       setNewPassword('');
     } catch (err: any) {
       alert(err.message || 'Erro ao alterar senha');
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'Agendado';
+      case 'confirmed': return 'Confirmado';
+      case 'in_progress': return 'Em Atendimento';
+      case 'completed': return 'Concluído';
+      case 'cancelled': return 'Cancelado';
+      case 'reception': return 'Na Recepção';
+      default: return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'reception': return 'bg-cyan-100 text-cyan-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -247,6 +369,17 @@ export default function VeterinarianPortal() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab('appointments')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                activeTab === 'appointments'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Calendar className="h-5 w-5" />
+              <span>Agenda</span>
+            </button>
             <button
               onClick={() => setActiveTab('animals')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
@@ -304,6 +437,103 @@ export default function VeterinarianPortal() {
             </button>
           </div>
         </div>
+
+        {activeTab === 'appointments' && (
+          <div>
+            {/* --- FILTRO DE DATA --- */}
+            <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
+                    <Filter className="h-5 w-5 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Filtrar Data:</span>
+                    <input 
+                        type="date" 
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                </div>
+                <div className="text-sm text-gray-500">
+                    Mostrando agendamentos para: <span className="font-semibold text-gray-900">{new Date(selectedDate).toLocaleDateString('pt-BR')}</span>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <h3 className="font-semibold text-gray-700">Agendamentos do Dia</h3>
+              </div>
+              {appointments.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  Nenhum agendamento encontrado para esta data.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-16">Finalizar</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hora</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paciente</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutor</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duração</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notas</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {appointments.map((apt) => {
+                        const date = new Date(apt.scheduled_at);
+                        const isCompleted = apt.status === 'completed';
+                        
+                        return (
+                          <tr key={apt.id} className={isCompleted ? "bg-gray-50" : ""}>
+                            {/* CHECKBOX PARA FINALIZAR */}
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <input 
+                                    type="checkbox" 
+                                    checked={isCompleted}
+                                    onChange={() => toggleAppointmentStatus(apt.id, apt.status)}
+                                    className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                    title={isCompleted ? "Marcar como não finalizado" : "Finalizar consulta"}
+                                />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <div className={`flex flex-col ${isCompleted ? "opacity-50" : ""}`}>
+                                <span className="font-medium text-lg">{date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <div className={`flex flex-col ${isCompleted ? "opacity-50" : ""}`}>
+                                <span className="font-medium">{apt.animal.name}</span>
+                                <span className="text-xs text-gray-500">{apt.animal.species}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span className={isCompleted ? "opacity-50" : ""}>{apt.animal.tutor?.name || '-'}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div className={`flex items-center ${isCompleted ? "opacity-50" : ""}`}>
+                                <Clock className="w-4 h-4 mr-1" />
+                                {apt.duration_minutes} min
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(apt.status)}`}>
+                                {getStatusLabel(apt.status)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={apt.notes || ''}>
+                              {apt.notes || '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {activeTab === 'animals' && (
           <div>

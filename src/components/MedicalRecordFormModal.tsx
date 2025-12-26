@@ -11,13 +11,22 @@ interface MedicalRecordFormModalProps {
   record?: MedicalRecord;
 }
 
+// Interface auxiliar
+interface Veterinarian {
+  id: string;
+  name: string;
+}
+
 export function MedicalRecordFormModal({ isOpen, onClose, onSuccess, record }: MedicalRecordFormModalProps) {
   const { currentClinicId, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
+  const [veterinarians, setVeterinarians] = useState<Veterinarian[]>([]);
+  
   const [formData, setFormData] = useState({
     animal_id: '',
+    veterinarian_id: '', // Adicionado campo para ID do veterinário correto
     anamnesis: '',
     temperature_celsius: '',
     heart_rate: '',
@@ -32,9 +41,12 @@ export function MedicalRecordFormModal({ isOpen, onClose, onSuccess, record }: M
   useEffect(() => {
     if (isOpen && currentClinicId) {
       fetchTutors();
+      fetchVeterinarians(); // Buscar lista de veterinários
+      
       if (record) {
         setFormData({
           animal_id: record.animal_id,
+          veterinarian_id: record.veterinarian_id,
           anamnesis: record.anamnesis || '',
           temperature_celsius: record.temperature_celsius?.toString() || '',
           heart_rate: record.heart_rate?.toString() || '',
@@ -59,6 +71,30 @@ export function MedicalRecordFormModal({ isOpen, onClose, onSuccess, record }: M
       .eq('clinic_id', currentClinicId)
       .order('name');
     if (data) setTutors(data);
+  };
+
+  // Nova função para buscar veterinários e auto-selecionar se o usuário for um deles
+  const fetchVeterinarians = async () => {
+    if (!currentClinicId) return;
+
+    const { data } = await supabase
+      .from('veterinarians')
+      .select('id, name, user_id')
+      .eq('clinic_id', currentClinicId)
+      .eq('is_active', true)
+      .order('name');
+
+    if (data) {
+      setVeterinarians(data);
+      
+      // Se não estiver editando e o usuário logado for um veterinário, auto-seleciona
+      if (!record && user?.id) {
+        const currentVet = data.find(v => v.user_id === user.id);
+        if (currentVet) {
+          setFormData(prev => ({ ...prev, veterinarian_id: currentVet.id }));
+        }
+      }
+    }
   };
 
   const fetchAnimalsByTutor = async (animalId?: string) => {
@@ -102,8 +138,8 @@ export function MedicalRecordFormModal({ isOpen, onClose, onSuccess, record }: M
       return;
     }
 
-    if (!user?.id) {
-      alert('Erro: Usuário não identificado. Por favor, faça login novamente.');
+    if (!formData.veterinarian_id) {
+      alert('Erro: Veterinário responsável é obrigatório.');
       return;
     }
 
@@ -122,7 +158,7 @@ export function MedicalRecordFormModal({ isOpen, onClose, onSuccess, record }: M
         diagnosis: formData.diagnosis || null,
         treatment_plan: formData.treatment_plan || null,
         clinic_id: currentClinicId,
-        veterinarian_id: user.id,
+        veterinarian_id: formData.veterinarian_id, // Usa o ID selecionado/automático
       };
 
       if (record) {
@@ -147,6 +183,7 @@ export function MedicalRecordFormModal({ isOpen, onClose, onSuccess, record }: M
   const resetForm = () => {
     setFormData({
       animal_id: '',
+      veterinarian_id: '',
       anamnesis: '',
       temperature_celsius: '',
       heart_rate: '',
@@ -175,43 +212,63 @@ export function MedicalRecordFormModal({ isOpen, onClose, onSuccess, record }: M
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {!record && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tutor *</label>
-                <select
-                  onChange={(e) => handleTutorChange(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Selecione um tutor</option>
-                  {tutors.map((tutor) => (
-                    <option key={tutor.id} value={tutor.id}>
-                      {tutor.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {!record && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tutor *</label>
+                  <select
+                    onChange={(e) => handleTutorChange(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Selecione um tutor</option>
+                    {tutors.map((tutor) => (
+                      <option key={tutor.id} value={tutor.id}>
+                        {tutor.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Animal *</label>
-                <select
-                  value={formData.animal_id}
-                  onChange={(e) => setFormData({ ...formData, animal_id: e.target.value })}
-                  required
-                  disabled={animals.length === 0}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                >
-                  <option value="">Selecione um animal</option>
-                  {animals.map((animal) => (
-                    <option key={animal.id} value={animal.id}>
-                      {animal.name} ({animal.species})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Animal *</label>
+                  <select
+                    value={formData.animal_id}
+                    onChange={(e) => setFormData({ ...formData, animal_id: e.target.value })}
+                    required
+                    disabled={animals.length === 0}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    <option value="">Selecione um animal</option>
+                    {animals.map((animal) => (
+                      <option key={animal.id} value={animal.id}>
+                        {animal.name} ({animal.species})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+            
+            {/* Campo Veterinário Adicionado */}
+            <div className={record ? "col-span-2" : "col-span-2"}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Veterinário Responsável *</label>
+              <select
+                value={formData.veterinarian_id}
+                onChange={(e) => setFormData({ ...formData, veterinarian_id: e.target.value })}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Selecione um veterinário</option>
+                {veterinarians.map((vet) => (
+                  <option key={vet.id} value={vet.id}>
+                    {vet.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Sinais Vitais</h3>

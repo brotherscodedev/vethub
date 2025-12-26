@@ -1,10 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Calendar, Plus, Clock, User, Dog, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
+import moment from 'moment';
+import 'moment/locale/pt-br';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Appointment, Animal, Tutor } from '../types';
 import { AppointmentFormModal } from '../components/AppointmentFormModal';
+import { Plus } from 'lucide-react';
+
+moment.locale('pt-br');
+const localizer = momentLocalizer(moment);
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  resource: AppointmentWithDetails;
+}
 
 interface AppointmentWithDetails extends Appointment {
   animal?: Animal & { tutor?: Tutor };
@@ -13,41 +28,33 @@ interface AppointmentWithDetails extends Appointment {
 
 export function Appointments() {
   const { currentClinicId } = useAuth();
-  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
+  
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<View>(Views.WEEK);
 
-  useEffect(() => {
+  const fetchAppointments = useCallback(async () => {
     if (!currentClinicId) return;
-    fetchAppointments();
-  }, [currentClinicId, selectedDate, filterStatus]);
-
-  const fetchAppointments = async () => {
     setLoading(true);
-    try {
-      const startOfDay = new Date(selectedDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(selectedDate);
-      endOfDay.setHours(23, 59, 59, 999);
 
-      let query = supabase
+    try {
+      const startRange = moment(currentDate).startOf('month').subtract(7, 'days').toDate();
+      const endRange = moment(currentDate).endOf('month').add(7, 'days').toDate();
+
+      const { data: appointmentsData, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('clinic_id', currentClinicId)
-        .gte('scheduled_at', startOfDay.toISOString())
-        .lte('scheduled_at', endOfDay.toISOString())
-        .order('scheduled_at');
+        .gte('scheduled_at', startRange.toISOString())
+        .lte('scheduled_at', endRange.toISOString());
 
-      if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus);
-      }
-
-      const { data: appointmentsData } = await query;
+      if (error) throw error;
 
       if (appointmentsData) {
-        const appointmentsWithDetails = await Promise.all(
+        const formattedEvents: CalendarEvent[] = await Promise.all(
           appointmentsData.map(async (apt) => {
             const { data: animal } = await supabase
               .from('animals')
@@ -56,74 +63,93 @@ export function Appointments() {
               .maybeSingle();
 
             const { data: vet } = await supabase
-              .from('user_profiles')
-              .select('full_name')
-              .eq('id', apt.veterinarian_id)
+              .from('veterinarians')
+              .select('name')
+              .eq('user_id', apt.veterinarian_id)
+              .eq('clinic_id', currentClinicId)
               .maybeSingle();
 
+            const startDate = new Date(apt.scheduled_at);
+            const endDate = new Date(startDate.getTime() + apt.duration_minutes * 60000);
+
+            const vetName = vet?.name || 'Sem Veterinário';
+            const animalName = animal?.name || 'Desconhecido';
+            const tutorName = animal?.tutor?.name || '';
+
             return {
-              ...apt,
-              animal,
-              veterinarian_name: vet?.full_name || 'Veterinário',
+              id: apt.id,
+              title: `${animalName} (${tutorName}) - Dr(a). ${vetName}`,
+              start: startDate,
+              end: endDate,
+              resource: {
+                ...apt,
+                animal,
+                veterinarian_name: vetName,
+              },
             };
           })
         );
-        setAppointments(appointmentsWithDetails);
+        setEvents(formattedEvents);
       }
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentClinicId, currentDate]);
 
-  const changeDate = (days: number) => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + days);
-    setSelectedDate(newDate);
-  };
-
-  const updateStatus = async (appointmentId: string, newStatus: string) => {
-    await supabase
-      .from('appointments')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq('id', appointmentId);
+  useEffect(() => {
     fetchAppointments();
+  }, [fetchAppointments]);
+
+  const handleSelectSlot = ({ start }: { start: Date }) => {
+    setSelectedAppointment(undefined);
+    setShowModal(true);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'scheduled': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'reception': return 'bg-cyan-100 text-cyan-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const handleSelectEvent = (event: CalendarEvent) => {
+    setSelectedAppointment(event.resource);
+    setShowModal(true);
   };
 
-  const getStatusText = (status: string) => {
+  const eventStyleGetter = (event: CalendarEvent) => {
+    let backgroundColor = '#3174ad';
+    const status = event.resource.status;
+
     switch (status) {
-      case 'confirmed': return 'Confirmado';
-      case 'scheduled': return 'Agendado';
-      case 'in_progress': return 'Em Atendimento';
-      case 'completed': return 'Concluído';
-      case 'cancelled': return 'Cancelado';
-      case 'reception': return 'Na Recepção';
-      case 'pending': return 'Pendente';
-      default: return status;
+      case 'confirmed': backgroundColor = '#10B981'; break;
+      case 'in_progress': backgroundColor = '#F59E0B'; break;
+      case 'completed': backgroundColor = '#6B7280'; break;
+      case 'cancelled': backgroundColor = '#EF4444'; break;
+      case 'reception': backgroundColor = '#06B6D4'; break;
+      default: backgroundColor = '#3B82F6';
     }
+
+    return {
+      style: {
+        backgroundColor,
+        borderRadius: '4px',
+        opacity: 0.8,
+        color: 'white',
+        border: '0px',
+        display: 'block'
+      }
+    };
   };
 
   return (
     <AuthenticatedLayout>
-      <div className="p-6">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="h-screen flex flex-col p-6">
+        <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
-            <p className="text-gray-600">Gerenciar agendamentos e fila de atendimento</p>
+            <p className="text-gray-600">Gestão visual de consultas e veterinários</p>
           </div>
           <button
-            onClick={() => setShowNewModal(true)}
+            onClick={() => {
+              setSelectedAppointment(undefined);
+              setShowModal(true);
+            }}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
@@ -131,141 +157,48 @@ export function Appointments() {
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-6 border-b">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => changeDate(-1)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" />
-                  <h2 className="text-xl font-semibold">
-                    {selectedDate.toLocaleDateString('pt-BR', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </h2>
-                </div>
-                <button
-                  onClick={() => changeDate(1)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setSelectedDate(new Date())}
-                  className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
-                >
-                  Hoje
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-gray-500" />
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">Todos os status</option>
-                  <option value="scheduled">Agendado</option>
-                  <option value="confirmed">Confirmado</option>
-                  <option value="reception">Na Recepção</option>
-                  <option value="in_progress">Em Atendimento</option>
-                  <option value="completed">Concluído</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {loading ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">Carregando agendamentos...</p>
-              </div>
-            ) : appointments.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-2">Nenhum agendamento para esta data</p>
-                <p className="text-sm text-gray-400">
-                  Clique em "Novo Agendamento" para criar um
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {appointments.map((apt) => (
-                  <div
-                    key={apt.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4 flex-1">
-                        <div className="flex items-center gap-2 min-w-[100px]">
-                          <Clock className="w-5 h-5 text-gray-500" />
-                          <span className="font-semibold text-gray-900">
-                            {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Dog className="w-5 h-5 text-gray-600" />
-                            <span className="font-semibold text-gray-900">
-                              {apt.animal?.name || 'Animal'}
-                            </span>
-                            <span className="text-gray-500 text-sm">
-                              ({apt.animal?.species})
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <User className="w-4 h-4" />
-                            <span>Tutor: {apt.animal?.tutor?.name || 'Não informado'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                            <User className="w-4 h-4" />
-                            <span>Veterinário: {apt.veterinarian_name}</span>
-                          </div>
-                          {apt.notes && (
-                            <p className="text-sm text-gray-500 mt-2">{apt.notes}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
-                          {getStatusText(apt.status)}
-                        </span>
-                        <select
-                          value={apt.status}
-                          onChange={(e) => updateStatus(apt.id, e.target.value)}
-                          className="text-sm px-2 py-1 border border-gray-300 rounded"
-                        >
-                          <option value="scheduled">Agendado</option>
-                          <option value="confirmed">Confirmado</option>
-                          <option value="reception">Na Recepção</option>
-                          <option value="in_progress">Em Atendimento</option>
-                          <option value="completed">Concluído</option>
-                          <option value="cancelled">Cancelado</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="flex-1 bg-white rounded-lg shadow p-4">
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: '100%' }}
+            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+            view={view}
+            onView={setView}
+            date={currentDate}
+            onNavigate={setCurrentDate}
+            selectable
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            eventPropGetter={eventStyleGetter}
+            messages={{
+              today: 'Hoje',
+              previous: 'Anterior',
+              next: 'Próximo',
+              month: 'Mês',
+              week: 'Semana',
+              day: 'Dia',
+              agenda: 'Agenda',
+              date: 'Data',
+              time: 'Hora',
+              event: 'Evento',
+              noEventsInRange: 'Não há agendamentos neste período.',
+            }}
+            min={new Date(0, 0, 0, 8, 0, 0)}
+            max={new Date(0, 0, 0, 20, 0, 0)}
+          />
         </div>
 
         <AppointmentFormModal
-          isOpen={showNewModal}
-          onClose={() => setShowNewModal(false)}
-          onSuccess={fetchAppointments}
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onSuccess={() => {
+            fetchAppointments();
+            setShowModal(false);
+          }}
+          appointment={selectedAppointment}
         />
       </div>
     </AuthenticatedLayout>

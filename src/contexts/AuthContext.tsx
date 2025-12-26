@@ -27,7 +27,8 @@ export interface AuthContextType {
   setCurrentClinic: (clinicId: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// CORREÇÃO: Exportação essencial para os testes
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -74,10 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setClinics(enrichedClinics);
             if (enrichedClinics.length > 0) {
-              console.log('AuthContext - Setting current clinic ID:', enrichedClinics[0].clinic_id);
               setCurrentClinicId(enrichedClinics[0].clinic_id);
-            } else {
-              console.warn('AuthContext - No clinics found for user');
             }
           }
         }
@@ -91,68 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          console.log('AuthContext - onAuthStateChange: User logged in:', session.user.id);
-
-          const { data: profileData } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          console.log('AuthContext - onAuthStateChange: Profile data:', profileData);
-          setProfile(profileData);
-
-          const { data: clinicUsersData } = await supabase
-            .from('clinic_users')
-            .select('clinic_id, role')
-            .eq('user_id', session.user.id)
-            .eq('is_active', true);
-
-          console.log('AuthContext - onAuthStateChange: Clinic users data:', clinicUsersData);
-
-          if (clinicUsersData && clinicUsersData.length > 0) {
-            const { data: clinicsData } = await supabase
-              .from('clinics')
-              .select('id, name')
-              .in('id', clinicUsersData.map((cu) => cu.clinic_id));
-
-            console.log('AuthContext - onAuthStateChange: Clinics data:', clinicsData);
-
-            const enrichedClinics = clinicUsersData.map((cu) => ({
-              clinic_id: cu.clinic_id,
-              clinic_name: clinicsData?.find((c) => c.id === cu.clinic_id)?.name || 'Unknown',
-              role: cu.role,
-            }));
-
-            console.log('AuthContext - onAuthStateChange: Enriched clinics:', enrichedClinics);
-            setClinics(enrichedClinics);
-
-            if (enrichedClinics.length > 0) {
-              const currentIsValid = enrichedClinics.some(c => c.clinic_id === currentClinicId);
-              if (!currentIsValid) {
-                console.log('AuthContext - onAuthStateChange: Setting current clinic ID to:', enrichedClinics[0].clinic_id);
-                setCurrentClinicId(enrichedClinics[0].clinic_id);
-              } else {
-                console.log('AuthContext - onAuthStateChange: Current clinic ID is still valid:', currentClinicId);
-              }
-            }
-          } else {
-            console.warn('AuthContext - onAuthStateChange: No clinic users found');
-            setClinics([]);
-            setCurrentClinicId(null);
-          }
-        } else {
-          console.log('AuthContext - onAuthStateChange: User logged out');
-          setProfile(null);
-          setClinics([]);
-          setCurrentClinicId(null);
-        }
-      })();
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (!session) {
+        setProfile(null);
+        setClinics([]);
+        setCurrentClinicId(null);
+      }
     });
 
     return () => {
@@ -163,11 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, clinicData: any, profileData: any) => {
     setIsAuthenticating(true);
     try {
-      console.log('Starting signup process...', { email, clinicData, profileData });
-
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup`;
-      console.log('API URL:', apiUrl);
-
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -177,29 +116,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password, clinicData, profileData }),
       });
 
-      console.log('Signup response status:', response.status);
-
       const result = await response.json();
-      console.log('Signup result:', result);
 
       if (!result.success) {
         throw new Error(result.error || 'Erro ao criar conta');
       }
 
-      console.log('Signup successful, signing in...');
-
-      // Sign in the user after successful signup
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) {
-        console.error('Sign in error:', signInError);
-        throw signInError;
-      }
-
-      console.log('Sign in successful');
+      if (signInError) throw signInError;
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -211,15 +139,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsAuthenticating(true);
     try {
-      console.log('Starting sign in...', { email });
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('Sign in error:', error);
-        throw error;
-      }
-      console.log('Sign in successful');
+      if (error) throw error;
     } catch (error) {
-      console.error('Sign in failed:', error);
       throw error;
     } finally {
       setIsAuthenticating(false);

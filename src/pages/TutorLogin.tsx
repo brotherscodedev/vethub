@@ -28,7 +28,21 @@ export function TutorLogin() {
       navigate('/tutor');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
+      
+      let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
+      
+      // Lógica robusta para extração de erro
+      if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err?.message) {
+        errorMessage = err.message; // Caso padrão: throw new Error('msg') ou objeto { message: 'msg' }
+      } else if (err?.error?.message) {
+        errorMessage = err.error.message; // Caso comum em respostas de API: { error: { message: 'msg' } }
+      } else if (err?.error_description) {
+        errorMessage = err.error_description; // Caso OAuth
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -48,7 +62,7 @@ export function TutorLogin() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm" role="alert">
                   {error}
                 </div>
               )}

@@ -11,7 +11,7 @@ import {
   X,
   Plus,
   Edit,
-  Key
+  Key,
 } from 'lucide-react';
 import { TutorFormModal } from '../components/TutorFormModal';
 import { AnimalFormModal } from '../components/AnimalFormModal';
@@ -84,7 +84,9 @@ interface Animal {
 
 export function ReceptionPortal() {
   const [receptionist, setReceptionist] = useState<Receptionist | null>(null);
-  const [activeTab, setActiveTab] = useState<'requests' | 'calendar' | 'tutors' | 'animals'>('requests');
+  const [activeTab, setActiveTab] = useState<
+    'requests' | 'calendar' | 'tutors' | 'animals'
+  >('requests');
   const [requests, setRequests] = useState<AppointmentRequest[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -104,7 +106,9 @@ export function ReceptionPortal() {
 
   const loadReceptionistData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         navigate('/receptionist-login');
         return;
@@ -136,7 +140,8 @@ export function ReceptionPortal() {
   const loadRequests = async (clinicId: string) => {
     const { data } = await supabase
       .from('appointment_requests')
-      .select(`
+      .select(
+        `
         id,
         requested_date,
         requested_time,
@@ -146,7 +151,8 @@ export function ReceptionPortal() {
         animal:animals(name, species),
         tutor:tutors(name, phone),
         veterinarian:veterinarians(name)
-      `)
+      `
+      )
       .eq('clinic_id', clinicId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -157,7 +163,8 @@ export function ReceptionPortal() {
   const loadAppointments = async (clinicId: string) => {
     const { data } = await supabase
       .from('appointments')
-      .select(`
+      .select(
+        `
         id,
         scheduled_at,
         duration_minutes,
@@ -166,7 +173,8 @@ export function ReceptionPortal() {
         animal:animals(name, species),
         tutor:tutors(name, phone),
         veterinarian:veterinarians(name)
-      `)
+      `
+      )
       .eq('clinic_id', clinicId)
       .order('scheduled_at', { ascending: true });
 
@@ -176,7 +184,7 @@ export function ReceptionPortal() {
   const loadTutors = async (clinicId: string) => {
     const { data } = await supabase
       .from('tutors')
-      .select('id, name, email, phone, cpf, address')
+      .select('id, name, email, phone, cpf, address, number')
       .eq('clinic_id', clinicId)
       .order('name');
 
@@ -186,14 +194,16 @@ export function ReceptionPortal() {
   const loadAnimals = async (clinicId: string) => {
     const { data } = await supabase
       .from('animals')
-      .select(`
+      .select(
+        `
         id,
         name,
         species,
         breed,
         birth_date,
         tutor:tutors(name)
-      `)
+      `
+      )
       .eq('clinic_id', clinicId)
       .order('name');
 
@@ -204,7 +214,9 @@ export function ReceptionPortal() {
     if (!receptionist) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       await supabase.from('appointments').insert({
@@ -237,7 +249,9 @@ export function ReceptionPortal() {
     if (!receptionist) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       await supabase
@@ -264,7 +278,7 @@ export function ReceptionPortal() {
   const handlePasswordChange = async () => {
     try {
       const { error } = await supabase.auth.updateUser({
-        password: newPassword
+        password: newPassword,
       });
 
       if (error) throw error;
@@ -295,7 +309,9 @@ export function ReceptionPortal() {
                 <ClipboardList className="h-6 w-6 text-emerald-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Portal da Recepção</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Portal da Recepção
+                </h1>
                 <p className="text-sm text-gray-600">{receptionist?.name}</p>
               </div>
             </div>
@@ -377,25 +393,48 @@ export function ReceptionPortal() {
         {activeTab === 'requests' && (
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Solicitações Pendentes</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                Solicitações Pendentes
+              </h2>
               {requests.length === 0 ? (
                 <p className="text-gray-500">Nenhuma solicitação pendente</p>
               ) : (
                 <div className="space-y-4">
                   {requests.map((request) => (
-                    <div key={request.id} className="border border-gray-200 rounded-lg p-4">
+                    <div
+                      key={request.id}
+                      className="border border-gray-200 rounded-lg p-4"
+                    >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold">{request.animal.name}</span>
-                            <span className="text-sm text-gray-500">({request.animal.species})</span>
+                            <span className="font-semibold">
+                              {request.animal.name}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              ({request.animal.species})
+                            </span>
                           </div>
                           <div className="text-sm text-gray-600 space-y-1">
-                            <div>Tutor: {request.tutor.name} - {request.tutor.phone}</div>
-                            <div>Data: {new Date(request.requested_date).toLocaleDateString('pt-BR')}</div>
+                            <div>
+                              Tutor: {request.tutor.name} -{' '}
+                              {request.tutor.phone}
+                            </div>
+                            <div>
+                              Data:{' '}
+                              {new Date(
+                                request.requested_date
+                              ).toLocaleDateString('pt-BR')}
+                            </div>
                             <div>Horário: {request.requested_time}</div>
-                            {request.veterinarian && <div>Veterinário: {request.veterinarian.name}</div>}
-                            {request.notes && <div>Observações: {request.notes}</div>}
+                            {request.veterinarian && (
+                              <div>
+                                Veterinário: {request.veterinarian.name}
+                              </div>
+                            )}
+                            {request.notes && (
+                              <div>Observações: {request.notes}</div>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -426,18 +465,28 @@ export function ReceptionPortal() {
         {activeTab === 'calendar' && (
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Agenda de Consultas</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                Agenda de Consultas
+              </h2>
               {appointments.length === 0 ? (
                 <p className="text-gray-500">Nenhuma consulta agendada</p>
               ) : (
                 <div className="space-y-2">
                   {appointments.map((appointment) => (
-                    <div key={appointment.id} className="border border-gray-200 rounded-lg p-4">
+                    <div
+                      key={appointment.id}
+                      className="border border-gray-200 rounded-lg p-4"
+                    >
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="font-semibold">{appointment.animal.name} ({appointment.animal.species})</div>
+                          <div className="font-semibold">
+                            {appointment.animal.name} (
+                            {appointment.animal.species})
+                          </div>
                           <div className="text-sm text-gray-600">
-                            {new Date(appointment.scheduled_at).toLocaleString('pt-BR')}
+                            {new Date(appointment.scheduled_at).toLocaleString(
+                              'pt-BR'
+                            )}
                           </div>
                           <div className="text-sm text-gray-600">
                             Tutor: {appointment.tutor.name}
@@ -448,11 +497,15 @@ export function ReceptionPortal() {
                             </div>
                           )}
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          appointment.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            appointment.status === 'confirmed'
+                              ? 'bg-green-100 text-green-800'
+                              : appointment.status === 'completed'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
                           {appointment.status}
                         </span>
                       </div>
@@ -484,20 +537,45 @@ export function ReceptionPortal() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">CPF</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Nome
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Telefone
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        CPF
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Endereço
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Ações
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {tutors.map((tutor) => (
                       <tr key={tutor.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tutor.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tutor.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tutor.phone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tutor.cpf}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {tutor.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {tutor.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {tutor.phone}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {tutor.cpf}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {tutor.address}
+                          {tutor.number ? `, ${tutor.number}` : ''}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <button
                             onClick={() => {
@@ -538,23 +616,45 @@ export function ReceptionPortal() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Espécie</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Raça</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutor</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data Nasc.</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Nome
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Espécie
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Raça
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Tutor
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Data Nasc.
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Ações
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {animals.map((animal) => (
                       <tr key={animal.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{animal.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{animal.species}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{animal.breed}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{animal.tutor.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(animal.birth_date).toLocaleDateString('pt-BR')}
+                          {animal.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {animal.species}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {animal.breed}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {animal.tutor.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(animal.birth_date).toLocaleDateString(
+                            'pt-BR'
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <button

@@ -51,6 +51,18 @@ export function VetMedicalRecordModal({ onClose, onSuccess }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      // --- CORREÇÃO: Buscar o ID do veterinário baseado no usuário logado ---
+      const { data: vetProfile, error: vetError } = await supabase
+        .from('veterinarians')
+        .select('id, clinic_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vetError || !vetProfile) {
+        throw new Error('Perfil de veterinário não encontrado. Entre em contato com o administrador.');
+      }
+      // -----------------------------------------------------------------------
+
       const selectedAnimal = animals.find(a => a.id === formData.animal_id);
       if (!selectedAnimal) throw new Error('Animal não encontrado');
 
@@ -59,7 +71,7 @@ export function VetMedicalRecordModal({ onClose, onSuccess }: Props) {
         .insert({
           clinic_id: selectedAnimal.clinic_id,
           animal_id: formData.animal_id,
-          veterinarian_id: user.id,
+          veterinarian_id: vetProfile.id, 
           anamnesis: formData.anamnesis || null,
           temperature_celsius: formData.temperature_celsius ? parseFloat(formData.temperature_celsius) : null,
           heart_rate: formData.heart_rate ? parseInt(formData.heart_rate) : null,
@@ -75,6 +87,7 @@ export function VetMedicalRecordModal({ onClose, onSuccess }: Props) {
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error(err);
       setError(err.message || 'Erro ao criar prontuário');
     } finally {
       setIsLoading(false);
