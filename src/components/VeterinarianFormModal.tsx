@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import {
+  maskCPF,
+  maskCRMV,
+  maskPhone,
+  validateEmail,
+} from '../utils/validationsMasks';
 
 interface VeterinarianFormModalProps {
   onClose: () => void;
@@ -8,7 +14,11 @@ interface VeterinarianFormModalProps {
   clinicId: string;
 }
 
-export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: VeterinarianFormModalProps) {
+export default function VeterinarianFormModal({
+  onClose,
+  onSuccess,
+  clinicId,
+}: VeterinarianFormModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,7 +29,7 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [createAccount, setCreateAccount] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +37,8 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
     setError('');
 
     try {
+      if (!validate()) return;
+
       const { data: veterinarian, error: vetError } = await supabase
         .from('veterinarians')
         .insert([
@@ -45,24 +57,27 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
 
       if (vetError) throw vetError;
 
-      if (createAccount && veterinarian) {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-veterinarian-account`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session?.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ veterinarianId: veterinarian.id }),
-          }
-        );
+      // Cria automaticamente conta de acesso ao portal se tiver email e CPF
+      if (veterinarian && veterinarian.email && veterinarian.cpf) {
+        const apiUrl = `${
+          import.meta.env.VITE_SUPABASE_URL
+        }/functions/v1/create-veterinarian-account`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: veterinarian.email,
+            password: veterinarian.cpf,
+            veterinarianId: veterinarian.id,
+          }),
+        });
 
         const result = await response.json();
 
-        if (!response.ok) {
+        if (!result.success) {
           throw new Error(result.error || 'Erro ao criar conta de acesso');
         }
       }
@@ -75,11 +90,27 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
     }
   };
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) newErrors.name = 'O nome é obrigatório';
+    if (!formData.cpf || formData.cpf.length < 14)
+      newErrors.cpf = 'CPF inválido';
+    if (!formData.email || validateEmail(formData.email))
+      newErrors.email = 'E-mail inválido';
+    if (!formData.crmv) newErrors.crmv = 'CRMV inválido';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Novo Veterinário</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Novo Veterinário
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500"
@@ -88,7 +119,7 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -104,9 +135,23 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) setErrors({ ...errors, name: '' });
+                }}
+                placeholder="Fulano da Silva Junior"
+                maxLength={100}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                  errors.name
+                    ? 'border-red-500 focus:ring-red-200'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
               />
+              {errors.name && (
+                <span className="text-red-500 text-xs mt-1 font-medium">
+                  {errors.name}
+                </span>
+              )}
             </div>
 
             <div>
@@ -117,9 +162,23 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
                 type="email"
                 required
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  if (errors.email) setErrors({ ...errors, email: '' });
+                }}
+                placeholder="teste@gmail.com"
+                maxLength={255}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                  errors.name
+                    ? 'border-red-500 focus:ring-red-200'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
               />
+              {errors.email && (
+                <span className="text-red-500 text-xs mt-1 font-medium">
+                  {errors.email}
+                </span>
+              )}
             </div>
 
             <div>
@@ -129,11 +188,24 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
               <input
                 type="text"
                 required
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-                placeholder="Usado como senha inicial"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={maskCPF(formData.cpf)}
+                onChange={(e) => {
+                  setFormData({ ...formData, cpf: e.target.value });
+                  if (errors.cpf) setErrors({ ...errors, cpf: '' });
+                }}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                  errors.cpf
+                    ? 'border-red-500 focus:ring-red-200'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
               />
+              {errors.cpf && (
+                <span className="text-red-500 text-xs mt-1 font-medium">
+                  {errors.cpf}
+                </span>
+              )}
             </div>
 
             <div>
@@ -143,11 +215,24 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
               <input
                 type="text"
                 required
-                value={formData.crmv}
-                onChange={(e) => setFormData({ ...formData, crmv: e.target.value })}
-                placeholder="Ex: CRMV-SP 12345"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={maskCRMV(formData.crmv)}
+                onChange={(e) => {
+                  setFormData({ ...formData, crmv: e.target.value });
+                  if (errors.crmv) setErrors({ ...errors, crmv: '' });
+                }}
+                placeholder="CRMV-SP"
+                maxLength={9}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                  errors.crmv
+                    ? 'border-red-500 focus:ring-red-200'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
               />
+              {errors.crmv && (
+                <span className="text-red-500 text-xs mt-1 font-medium">
+                  {errors.crmv}
+                </span>
+              )}
             </div>
 
             <div>
@@ -156,8 +241,10 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
               </label>
               <input
                 type="text"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                value={maskPhone(formData.phone)}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 placeholder="(11) 98765-4321"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -170,25 +257,22 @@ export default function VeterinarianFormModal({ onClose, onSuccess, clinicId }: 
               <input
                 type="text"
                 value={formData.specialization}
-                onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, specialization: e.target.value })
+                }
                 placeholder="Ex: Cirurgia, Dermatologia, etc."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={createAccount}
-                  onChange={(e) => setCreateAccount(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">
-                  Criar conta de acesso ao portal (senha: CPF)
-                </span>
-              </label>
-            </div>
+            {formData.email && formData.cpf && (
+              <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-700">
+                  Acesso ao Portal do Veterinário será criado automaticamente. A
+                  senha inicial será o CPF do veterinário.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">

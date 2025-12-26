@@ -144,9 +144,9 @@ export function TutorFormModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) newErrors.name = 'O nome é obrigatório';
-    if (!formData.cpf || formData.cpf.length < 14)
+    if (!formData.cpf && formData.cpf.length < 14)
       newErrors.cpf = 'CPF inválido';
-    if (formData.email && validateEmail(formData.email))
+    if (!formData.email && validateEmail(formData.email))
       newErrors.email = 'E-mail inválido';
 
     setErrors(newErrors);

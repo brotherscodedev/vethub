@@ -8,6 +8,17 @@ export const maskCPF = (value: string) => {
     .replace(/(-\d{2})\d+?$/, '$1');
 };
 
+// Máscara de CNPJ: 00.000.000/0000-00
+export const maskCNPJ = (value: string) => {
+  return value
+    .replace(/\D/g, '')                    
+    .replace(/^(\d{2})(\d)/, '$1.$2')      
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3') 
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')    
+    .replace(/(\d{4})(\d)/, '$1-$2')       
+    .replace(/(-\d{2})\d+?$/, '$1'); 
+};
+
 // Máscara de Telefone: (00) 00000-0000 ou (00) 0000-0000
 export const maskPhone = (value: string) => {
   return value
@@ -49,4 +60,10 @@ export const maskCRMV = (value: string) => {
     .replace(/[^0-9a-zA-Z]/g, '')
     .replace(/^(\d{1,6})([a-zA-Z]{0,2})$/, '$1/$2')
     .toUpperCase();
+};
+
+// Função genérica para remover máscaras (retorna apenas números)
+// Útil para limpar CPF, CNPJ, Telefone antes de salvar no banco
+export const unmask = (value: string) => {
+  return value.replace(/\D/g, '');
 };

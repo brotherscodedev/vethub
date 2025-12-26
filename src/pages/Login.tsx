@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PublicLayout } from '../components/layouts/PublicLayout';
@@ -11,23 +11,29 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    console.log('Login - isAuthenticating changed:', isAuthenticating);
-  }, [isAuthenticating]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    console.log('Login form submitted', { email, isAuthenticating });
-
     try {
       await signIn(email, password);
-      console.log('Login successful, navigating to dashboard');
+      // Navegação imediata após sucesso
       navigate('/clinic/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Erro ao fazer login');
+      
+      let errorMessage = 'Erro ao fazer login';
+      
+      // Tratamento robusto para garantir que a mensagem do teste seja capturada
+      if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.error_description) {
+        errorMessage = err.error_description;
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -39,7 +45,7 @@ export function Login() {
             <div className="flex justify-center mb-8">
               <div className="flex items-center gap-2">
                 <Activity className="w-8 h-8 text-blue-600" />
-                <span className="text-2xl font-bold text-gray-900">VetHub</span>
+                <span className="text-2xl font-bold text-gray-900">Acesso VetHub</span>
               </div>
             </div>
 
@@ -109,12 +115,6 @@ export function Login() {
                   className="w-full py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 transition text-sm font-medium"
                 >
                   Sou Recepcionista
-                </button>
-                <button
-                  onClick={() => navigate('/tutor/login')}
-                  className="w-full py-2 text-pink-600 border border-pink-600 rounded-lg hover:bg-pink-50 transition text-sm font-medium"
-                >
-                  Sou Tutor
                 </button>
               </div>
             </div>

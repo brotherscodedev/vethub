@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PublicLayout } from '../components/layouts/PublicLayout';
 import { Activity } from 'lucide-react';
+import { maskCNPJ, unmask } from '../utils/validationsMasks';
 
 export function Signup() {
   const navigate = useNavigate();
@@ -32,10 +33,17 @@ export function Signup() {
   const handleSignUp = async () => {
     setError('');
 
+    const cleanCNPJ = unmask(clinicData.cnpj);
+
     console.log('Signup form submitted', { clinicData, profileData, isAuthenticating });
 
-    if (!clinicData.name || !clinicData.cnpj) {
+    if (!clinicData.name || !cleanCNPJ) {
       setError('Dados da clínica incompletos');
+      return;
+    }
+
+    if (cleanCNPJ.length !== 14) {
+      setError('CNPJ inválido');
       return;
     }
 
@@ -51,7 +59,7 @@ export function Signup() {
 
     try {
       console.log('Calling signUp...');
-      await signUp(profileData.email, profileData.password, clinicData, {
+      await signUp(profileData.email, profileData.password, { ...clinicData, cnpj: cleanCNPJ }, {
         full_name: profileData.full_name,
         cpf: profileData.cpf,
       });
@@ -104,8 +112,9 @@ export function Signup() {
                   <input
                     type="text"
                     value={clinicData.cnpj}
-                    onChange={(e) => setClinicData({ ...clinicData, cnpj: e.target.value })}
+                    onChange={(e) => setClinicData({ ...clinicData, cnpj: maskCNPJ(e.target.value) })}
                     required
+                    maxLength={18}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>

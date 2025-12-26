@@ -11,10 +11,11 @@ interface AppointmentFormModalProps {
   appointment?: Appointment;
 }
 
-interface UserProfile {
+// 1. ATUALIZAÇÃO: Adicionado user_id à interface
+interface Veterinarian {
   id: string;
-  full_name: string;
-  role: string;
+  name: string;
+  user_id: string; 
 }
 
 export function AppointmentFormModal({
@@ -27,7 +28,7 @@ export function AppointmentFormModal({
   const [loading, setLoading] = useState(false);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
-  const [veterinarians, setVeterinarians] = useState<UserProfile[]>([]);
+  const [veterinarians, setVeterinarians] = useState<Veterinarian[]>([]);
   const [formData, setFormData] = useState({
     animal_id: '',
     veterinarian_id: '',
@@ -102,28 +103,18 @@ export function AppointmentFormModal({
     }
   };
 
+
   const fetchVeterinarians = async () => {
     if (!currentClinicId) return;
-    const { data: clinicUsers } = await supabase
-      .from('clinic_users')
-      .select('user_id')
+    
+    const { data } = await supabase
+      .from('veterinarians')
+      .select('id, name, user_id') 
       .eq('clinic_id', currentClinicId)
-      .eq('role', 'veterinarian')
-      .eq('is_active', true);
+      .order('name');
 
-    if (clinicUsers && clinicUsers.length > 0) {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .in(
-          'id',
-          clinicUsers.map((cu) => cu.user_id)
-        )
-        .order('full_name');
-
-      if (data) {
-        setVeterinarians(data.map((d) => ({ ...d, role: 'veterinarian' })));
-      }
+    if (data) {
+      setVeterinarians(data);
     }
   };
 
@@ -131,9 +122,7 @@ export function AppointmentFormModal({
     e.preventDefault();
 
     if (!currentClinicId) {
-      alert(
-        'Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.'
-      );
+      alert('Erro: Nenhuma clínica selecionada. Por favor, recarregue a página.');
       return;
     }
 
@@ -170,9 +159,7 @@ export function AppointmentFormModal({
       resetForm();
     } catch (error: any) {
       console.error('Error saving appointment:', error);
-      alert(
-        `Erro ao salvar agendamento: ${error.message || 'Erro desconhecido'}`
-      );
+      alert(`Erro ao salvar agendamento: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
@@ -262,8 +249,9 @@ export function AppointmentFormModal({
             >
               <option value="">Selecione um veterinário</option>
               {veterinarians.map((vet) => (
-                <option key={vet.id} value={vet.id}>
-                  {vet.full_name}
+                
+                <option key={vet.id} value={vet.user_id}>
+                  {vet.name}
                 </option>
               ))}
             </select>

@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Plus, User, Mail, Phone, Stethoscope, Shield, ShieldCheck, Trash2 } from 'lucide-react';
+import {
+  Plus,
+  User,
+  Mail,
+  Phone,
+  Stethoscope,
+  Shield,
+  ShieldCheck,
+  Trash2,
+  Edit2,
+} from 'lucide-react';
+import EditVeterinarianModal from '../components/EditVeterinarianModal';
 import { supabase } from '../lib/supabase';
 import VeterinarianFormModal from '../components/VeterinarianFormModal';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
+import { maskPhone } from '../utils/validationsMasks';
 
 interface Veterinarian {
   id: string;
@@ -24,13 +36,28 @@ export default function Veterinarians() {
   const [clinicId, setClinicId] = useState<string>('');
   const [error, setError] = useState('');
 
+  // Edit user modal state
+  const [editUserOpen, setEditUserOpen] = useState(false);
+  const [editingVeterinarian, setEditingVeterinarian] = useState<null | {
+    id: string;
+    name?: string;
+    email?: string;
+    cpf?: string;
+    crmv?: string;
+    phone?: string | null;
+    specialization?: string | null;
+    user_id?: string | null;
+  }>(null);
+
   useEffect(() => {
     loadClinicAndVeterinarians();
   }, []);
 
   const loadClinicAndVeterinarians = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: clinicUser } = await supabase
@@ -60,14 +87,18 @@ export default function Veterinarians() {
 
   const createAccount = async (veterinarianId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-veterinarian-account`,
+        `${
+          import.meta.env.VITE_SUPABASE_URL
+        }/functions/v1/create-veterinarian-account`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
+            Authorization: `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ veterinarianId }),
@@ -87,7 +118,10 @@ export default function Veterinarians() {
     }
   };
 
-  const toggleActive = async (veterinarianId: string, currentStatus: boolean) => {
+  const toggleActive = async (
+    veterinarianId: string,
+    currentStatus: boolean
+  ) => {
     try {
       const { error } = await supabase
         .from('veterinarians')
@@ -133,7 +167,9 @@ export default function Veterinarians() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Veterinários</h1>
-            <p className="text-gray-600 mt-2">Gerencie os veterinários da clínica</p>
+            <p className="text-gray-600 mt-2">
+              Gerencie os veterinários da clínica
+            </p>
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -180,13 +216,38 @@ export default function Veterinarians() {
                       <User className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{vet.name}</h3>
+                      <h3 className="font-semibold text-gray-900">
+                        {vet.name}
+                      </h3>
                       <p className="text-sm text-gray-500">{vet.crmv}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     {vet.user_id ? (
-                      <ShieldCheck className="h-5 w-5 text-green-600" title="Tem acesso ao portal" />
+                      <div className="flex items-center space-x-2">
+                        <div title="Tem acesso ao portal">
+                          <ShieldCheck className="h-5 w-5 text-green-600" />
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingVeterinarian({
+                              id: vet.id,
+                              name: vet.name,
+                              email: vet.email,
+                              cpf: vet.cpf,
+                              crmv: vet.crmv,
+                              phone: vet.phone,
+                              specialization: vet.specialization,
+                              user_id: vet.user_id,
+                            });
+                            setEditUserOpen(true);
+                          }}
+                          className="text-gray-400 hover:text-blue-600"
+                          title="Editar usuário"
+                        >
+                          <Edit2 className="h-5 w-5" />
+                        </button>
+                      </div>
                     ) : (
                       <button
                         onClick={() => createAccount(vet.id)}
@@ -207,7 +268,7 @@ export default function Veterinarians() {
                   {vet.phone && (
                     <div className="flex items-center text-sm text-gray-600">
                       <Phone className="h-4 w-4 mr-2" />
-                      <span>{vet.phone}</span>
+                      <span>{maskPhone(vet.phone)}</span>
                     </div>
                   )}
                   {vet.specialization && (
@@ -251,6 +312,26 @@ export default function Veterinarians() {
             loadClinicAndVeterinarians();
           }}
           clinicId={clinicId}
+        />
+      )}
+
+      {editUserOpen && editingVeterinarian && (
+        <EditVeterinarianModal
+          isOpen={editUserOpen}
+          onClose={() => setEditUserOpen(false)}
+          onSuccess={() => {
+            setEditUserOpen(false);
+            setEditingVeterinarian(null);
+            loadClinicAndVeterinarians();
+          }}
+          veterinarianId={editingVeterinarian.id}
+          initialName={editingVeterinarian.name}
+          initialEmail={editingVeterinarian.email}
+          initialCPF={editingVeterinarian.cpf}
+          initialCRMV={editingVeterinarian.crmv}
+          initialPhone={editingVeterinarian.phone}
+          initialSpecialization={editingVeterinarian.specialization}
+          initialUserId={editingVeterinarian.user_id}
         />
       )}
     </AuthenticatedLayout>
